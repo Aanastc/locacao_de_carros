@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-muted-olive: var(--text-muted);
+}
+
+@layer base {
+  :root {
+    /* MODO CLARO - Personalized Palette */
+    --bg-main: #f5f8f2; /* Suave baseado no #d3e4c5 */
+    --bg-card: #ffffff;
+    --text-main: #3d0e17; /* Escuro baseado no #8d2036 */
+    --text-muted: #8d2036; /* #color3 */
+    --border-color: #dbc9cc; /* #color1 */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(220, 201, 204, 0.5);
+    --primary: #ce0a31; /* #color4 */
+    --secondary: #b9d48b; /* #color2 */
+    --accent: #b9d48b; /* #color2 */
+    --success: #b9d48b; /* #color2 */
+    --danger: #ce0a31; /* #color4 */
+  }
+
+  .dark {
+    /* MODO ESCURO - SaaS Style */
+    --bg-main: #0B1120;
+    --bg-card: #111827;
+    --text-main: #E5E7EB;
+    --text-muted: #9CA3AF;
+    --border-color: #374151;
+    --glass-bg: rgba(17, 24, 39, 0.8);
+    --glass-border: rgba(55, 65, 81, 0.5);
+    --primary: #3B82F6;
+    --secondary: #14B8A6;
+    --accent: #22C55E;
+    --success: #22C55E; 
+    --danger: #EF4444;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
+}
+
+@utility glass {
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+}
+
+@utility glass-dark {
+  background-color: rgba(15, 4, 5, 0.9);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(247, 187, 117, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
