@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { X, CircleNotch } from '@phosphor-icons/react'
 import { useAuth } from '../context/AuthContext'
@@ -7,6 +7,7 @@ export default function ExpenseModal({ car, onClose, onSuccess }) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isInitialized, setIsInitialized] = useState(false)
 
   const [formData, setFormData] = useState({
     expense_type: 'Manutenção',
@@ -16,8 +17,45 @@ export default function ExpenseModal({ car, onClose, onSuccess }) {
     description: ''
   })
 
+  // Load from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(`expenseDraft_${car.id}`)
+    if (saved) {
+      try {
+        setFormData(JSON.parse(saved))
+      } catch (e) {
+        console.error('Failed to parse draft', e)
+      }
+    }
+    setIsInitialized(true)
+  }, [car.id])
+
+  // Save to localStorage on change
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem(`expenseDraft_${car.id}`, JSON.stringify(formData))
+    }
+  }, [formData, car.id, isInitialized])
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  const handleCurrencyChange = (e) => {
+    const { name, value } = e.target
+    const numericValue = value.replace(/\D/g, '')
+    if (!numericValue) {
+      setFormData(prev => ({ ...prev, [name]: '' }))
+      return
+    }
+    const floatValue = parseFloat(numericValue) / 100
+    const formatted = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(floatValue)
+    setFormData(prev => ({ ...prev, [name]: formatted }))
+  }
+
+  const parseMaskedValue = (val) => {
+    if (!val) return 0
+    return parseFloat(val.replace(/\./g, '').replace(',', '.'))
   }
 
   const handleSubmit = async (e) => {
@@ -34,13 +72,14 @@ export default function ExpenseModal({ car, onClose, onSuccess }) {
         car_id: car.id,
         user_id: user.id,
         expense_type: finalType,
-        amount: parseFloat(formData.amount),
+        amount: parseMaskedValue(formData.amount),
         expense_date: formData.expense_date,
         description: formData.description || null
       }])
 
       if (expError) throw expError
 
+      localStorage.removeItem(`expenseDraft_${car.id}`)
       onSuccess()
       onClose()
     } catch (err) {
@@ -69,12 +108,12 @@ export default function ExpenseModal({ car, onClose, onSuccess }) {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Tipo de Despesa *</label>
               <select name="expense_type" value={formData.expense_type} onChange={handleChange} className="w-full bg-primary/5 border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
-                <option value="Troca de óleo">Troca de óleo</option>
-                <option value="Manutenção">Manutenção</option>
-                <option value="Seguro">Seguro</option>
-                <option value="Alinhamento">Alinhamento</option>
-                <option value="Multas">Multas</option>
-                <option value="Outros">Outros (Digitar)</option>
+                <option value="Troca de óleo" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Troca de óleo</option>
+                <option value="Manutenção" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Manutenção</option>
+                <option value="Seguro" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Seguro</option>
+                <option value="Alinhamento" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Alinhamento</option>
+                <option value="Multas" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Multas</option>
+                <option value="Outros" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Outros (Digitar)</option>
               </select>
             </div>
 
@@ -87,7 +126,7 @@ export default function ExpenseModal({ car, onClose, onSuccess }) {
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Valor (R$) *</label>
-              <input required type="number" step="0.01" name="amount" value={formData.amount} onChange={handleChange} className="w-full bg-primary/5 border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" placeholder="150.00" />
+              <input required type="text" inputMode="numeric" name="amount" value={formData.amount} onChange={handleCurrencyChange} className="w-full bg-primary/5 border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" placeholder="0,00" />
             </div>
 
             <div className="space-y-2">

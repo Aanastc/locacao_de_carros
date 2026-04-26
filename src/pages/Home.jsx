@@ -15,7 +15,6 @@ export default function Home() {
       </div>
 
       <div className="max-w-3xl w-full relative z-10 text-center space-y-8 animate-in fade-in zoom-in duration-700">
-        {/* Logo removida */}
 
         {/* Badge */}
         <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 px-5 py-2 rounded-full mb-4">

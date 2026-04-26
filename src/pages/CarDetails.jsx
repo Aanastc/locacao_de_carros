@@ -13,6 +13,10 @@ import RentCarModal from '../components/RentCarModal'
 import FinishRentModal from '../components/FinishRentModal'
 import ExpenseModal from '../components/ExpenseModal'
 import IncomeModal from '../components/IncomeModal'
+import EditIncomeModal from '../components/EditIncomeModal'
+import EditCarModal from '../components/EditCarModal'
+import EditRentModal from '../components/EditRentModal'
+import { PencilSimple } from '@phosphor-icons/react'
 
 export default function CarDetails() {
   const { plate } = useParams()
@@ -33,20 +37,35 @@ export default function CarDetails() {
   const [isFinishModalOpen, setIsFinishModalOpen] = useState(false)
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false)
+  const [isEditCarModalOpen, setIsEditCarModalOpen] = useState(false)
+  const [isEditRentModalOpen, setIsEditRentModalOpen] = useState(false)
+  const [editingIncome, setEditingIncome] = useState(null)
 
   const fetchData = async () => {
     if (!user || !plate) return
     setLoading(true)
     try {
       // 1. Get Car details
-      const { data: carData, error: carError } = await supabase
+      console.log('Fetching car with plate:', plate, 'for user:', user.id)
+      const { data: carsData, error: carError } = await supabase
         .from('cars')
         .select('*')
-        .eq('license_plate', plate)
+        .ilike('license_plate', plate)
         .eq('owner_id', user.id)
-        .single()
       
-      if (carError) throw carError
+      if (carError) {
+        console.error('Car fetch error:', carError)
+        throw carError
+      }
+
+      if (!carsData || carsData.length === 0) {
+        console.error('Car not found')
+        navigate('/dashboard')
+        return
+      }
+
+      const carData = carsData[0]
+      console.log('Car found:', carData)
       setCar(carData)
 
       // 2. Get Rentals
@@ -73,15 +92,18 @@ export default function CarDetails() {
         setExpenses(expensesData)
       }
 
-      // 4. Get All Incomes for this car
+      // 4. Get All Incomes for this car through its rentals
       const { data: incomesData, error: incomesError } = await supabase
         .from('incomes')
-        .select('*, rentals(client_name)')
-        .eq('car_id', carData.id)
-        .order('payment_date', { ascending: false })
+        .select('*, rentals(car_id, client_name)')
+        .eq('user_id', user.id)
       
       if (!incomesError && incomesData) {
-        setIncomes(incomesData)
+        // Filter incomes that belong to this car's rentals
+        const filteredIncomes = incomesData.filter(inc => inc.rentals?.car_id === carData.id)
+        setIncomes(filteredIncomes)
+      } else if (incomesError) {
+        console.error('Incomes fetch error:', incomesError)
       }
 
     } catch (error) {
@@ -232,18 +254,19 @@ export default function CarDetails() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="flex-1 flex justify-between items-center">
-              <div>
-                <div className="flex justify-between items-center pb-3 border-b border-border-color">
-                  <span className="text-muted-olive text-sm font-medium">Status</span>
-                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${
-                    car.status === 'Disponível' ? 'bg-accent/20 text-text-main border border-accent/30' :
-                    car.status === 'Alugado' ? 'bg-primary/10 text-primary border border-primary/20' :
-                    'bg-danger/10 text-danger border border-danger/20'
-                  }`}>
-                    {car.status}
-                  </span>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-xl sm:text-2xl font-black text-main">
+                    {car.brand} <span className="text-primary">{car.model}</span>
+                  </h1>
+              <button 
+                onClick={() => setIsEditCarModalOpen(true)}
+                className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 shadow-lg shadow-primary/20"
+              >
+                <PencilSimple className="w-4 h-4" /> Editar
+              </button>
                 </div>
-                <p className="text-xs text-muted-olive uppercase tracking-wider">{car.license_plate}</p>
+                <p className="text-xs text-muted-olive uppercase tracking-wider font-bold">{car.license_plate}</p>
               </div>
               <button 
                 onClick={toggleTheme}
@@ -261,7 +284,7 @@ export default function CarDetails() {
         {/* Painel de Ações Rápidas */}
         <div className="flex flex-wrap items-center gap-4">
           {car.status === 'Disponível' ? (
-            <button onClick={() => setIsRentModalOpen(true)} className="bg-accent hover:opacity-90 text-primary px-5 py-2.5 rounded-xl font-black transition-all flex items-center gap-2 shadow-lg shadow-accent/20 border border-accent/30">
+            <button onClick={() => setIsRentModalOpen(true)} className="bg-accent hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-black transition-all flex items-center gap-2 shadow-lg shadow-accent/20 border border-accent/30">
               <PlayCircle className="w-5 h-5" /> Iniciar Aluguel
             </button>
           ) : car.status === 'Alugado' ? (
@@ -270,7 +293,7 @@ export default function CarDetails() {
             </button>
           ) : null}
           
-          <button onClick={() => setIsExpenseModalOpen(true)} className="bg-primary/10 hover:bg-primary/20 text-primary px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 border border-primary/20">
+          <button onClick={() => setIsExpenseModalOpen(true)} className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-primary/20">
             <CurrencyDollar className="w-5 h-5" /> Lançar Despesa
           </button>
 
@@ -300,6 +323,16 @@ export default function CarDetails() {
                 <div className="flex justify-between items-center pb-3 border-b border-border-color">
                   <span className="text-muted-olive text-sm font-medium">Ano</span>
                   <span className="font-bold">{car.year}</span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-border-color">
+                  <span className="text-muted-olive text-sm font-medium">Status</span>
+                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${
+                    car.status === 'Disponível' ? 'bg-accent/20 text-white border border-accent/30' :
+                    car.status === 'Alugado' ? 'bg-primary/20 text-white border border-primary/20' :
+                    'bg-danger/20 text-white border border-danger/20'
+                  }`}>
+                    {car.status}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-border-color">
                   <span className="text-muted-olive text-sm font-medium">Cor</span>
@@ -359,10 +392,18 @@ export default function CarDetails() {
             {activeRental ? (
               <div className="bg-primary/5 dark:bg-primary-dark/20 border border-primary/20 rounded-2xl p-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-32 bg-primary/5 rounded-full blur-3xl"></div>
-                <h3 className="text-xl font-black mb-6 flex items-center gap-2 relative z-10">
-                  <WarningCircle className="w-6 h-6 text-accent" />
-                  Aluguel Ativo
-                </h3>
+                <div className="flex justify-between items-center mb-6 relative z-10">
+                  <h3 className="text-xl font-black flex items-center gap-2">
+                    <WarningCircle className="w-6 h-6 text-accent" />
+                    Aluguel Ativo
+                  </h3>
+                  <button 
+                    onClick={() => setIsEditRentModalOpen(true)}
+                    className="px-3 py-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent font-bold text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 border border-accent/20"
+                  >
+                    <PencilSimple className="w-4 h-4" /> Editar Aluguel
+                  </button>
+                </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
                   <div className="space-y-5">
@@ -386,20 +427,12 @@ export default function CarDetails() {
                       </div>
                     </div>
                     
-                    <div className="pt-4 border-t border-accent/10 grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-slate-400 mb-1">Pagamento</p>
-                        <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${activeRental.payment_status === 'Pago' ? 'bg-green-500/20 text-green-400 border border-green-500/20' : 'bg-orange-500/20 text-orange-400 border border-orange-500/20'}`}>
-                          {activeRental.payment_status.toUpperCase()}
-                        </span>
+                    {activeRental.security_deposit && (
+                      <div className="pt-4 border-t border-accent/10">
+                        <p className="text-xs text-slate-400 mb-1">Caução</p>
+                        <p className="text-sm font-bold text-accent">R$ {activeRental.security_deposit}</p>
                       </div>
-                      {activeRental.security_deposit && (
-                        <div>
-                          <p className="text-xs text-slate-400 mb-1">Caução</p>
-                          <p className="text-sm font-bold text-accent">R$ {activeRental.security_deposit}</p>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
                   
                   <div className="space-y-4">
@@ -439,18 +472,26 @@ export default function CarDetails() {
                     </button>
                   </div>
                   
-                  {incomes.length === 0 ? (
+                  {incomes.filter(inc => inc.rental_id === activeRental?.id).length === 0 ? (
                     <p className="text-xs text-muted-olive italic">Nenhum pagamento registrado neste aluguel ainda.</p>
                   ) : (
                     <div className="space-y-3">
-                      {incomes.map(inc => (
-                        <div key={inc.id} className="flex justify-between items-center bg-primary/5 p-3 rounded-lg border border-border-color">
+                      {incomes.filter(inc => inc.rental_id === activeRental?.id).map(inc => (
+                        <div key={inc.id} className="flex justify-between items-center bg-primary/5 p-3 rounded-lg border border-border-color group/inc">
                           <div>
                             <p className="font-black text-success">R$ {inc.amount}</p>
                             <p className="text-[10px] text-muted-olive font-bold uppercase">{inc.payment_method} • {new Date(inc.payment_date).toLocaleDateString('pt-BR')}</p>
                             {inc.notes && <p className="text-xs text-muted-olive mt-1 italic">{inc.notes}</p>}
                           </div>
-                          <CheckCircle2 className="w-5 h-5 text-success/30" />
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => setEditingIncome(inc)}
+                              className="text-[10px] font-bold uppercase tracking-wider text-muted-olive hover:text-white px-2 py-1 bg-white/5 hover:bg-white/10 rounded-md transition-colors border border-white/5"
+                            >
+                              Editar
+                            </button>
+                            <CheckCircle className="w-5 h-5 text-success/30" />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -547,6 +588,37 @@ export default function CarDetails() {
         <IncomeModal 
           rental={activeRental}
           onClose={() => setIsIncomeModalOpen(false)}
+          onSuccess={fetchData}
+        />
+      )}
+
+      {isEditCarModalOpen && car && (
+        <EditCarModal 
+          car={car}
+          onClose={() => setIsEditCarModalOpen(false)}
+          onSuccess={(newPlate) => {
+            if (newPlate !== car.license_plate) {
+              navigate(`/car/${newPlate}`)
+            } else {
+              fetchData()
+            }
+          }}
+        />
+      )}
+
+      {isEditRentModalOpen && activeRental && (
+        <EditRentModal 
+          rental={activeRental}
+          car={car}
+          onClose={() => setIsEditRentModalOpen(false)}
+          onSuccess={fetchData}
+        />
+      )}
+
+      {editingIncome && (
+        <EditIncomeModal 
+          income={editingIncome}
+          onClose={() => setEditingIncome(null)}
           onSuccess={fetchData}
         />
       )}

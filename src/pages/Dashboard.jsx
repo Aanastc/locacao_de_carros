@@ -418,7 +418,7 @@ export default function Dashboard() {
               <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3">
                 <button 
                   onClick={handleExportAnnual}
-                  className="bg-primary/10 hover:bg-primary/20 text-primary px-4 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 border border-primary/20"
+                  className="bg-primary hover:bg-primary/90 text-white px-4 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
                 >
                   <DownloadSimple className="w-5 h-5" />
                   <span className="text-xs">Baixar Planilha</span>
@@ -612,9 +612,9 @@ export default function Dashboard() {
                           <Car className="w-6 h-6 text-accent" />
                         </div>
                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${
-                          car.status === 'Disponível' ? 'bg-accent/10 text-accent' :
-                          car.status === 'Alugado' ? 'bg-primary/10 text-primary' :
-                          'bg-danger/10 text-danger'
+                          car.status === 'Disponível' ? 'bg-accent/20 text-white border border-accent/20' :
+                          car.status === 'Alugado' ? 'bg-primary/20 text-white border border-primary/20' :
+                          'bg-danger/20 text-white border border-danger/20'
                         }`}>
                           {car.status}
                         </span>

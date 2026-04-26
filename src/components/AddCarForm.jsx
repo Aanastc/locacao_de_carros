@@ -9,6 +9,17 @@ const STEPS = [
   { id: 3, name: 'Manutenção', icon: Wrench },
 ]
 
+const CAR_BRANDS = [
+  "Acura", "Agrale", "Alfa Romeo", "Aston Martin", "Audi", "Bentley", "BMW", "Bugatti", "Buick", "BYD", 
+  "Cadillac", "Caoa Chery", "Chery", "Chevrolet", "Chrysler", "Citroën", "Dacia", "Dodge", "Ferrari", 
+  "Fiat", "Fisker", "Ford", "GMC", "Great Wall Motors (GWM)", "Haval", "Honda", "Hyundai", "Infiniti", 
+  "JAC Motors", "Jaguar", "Jeep", "Kia", "Koenigsegg", "Lamborghini", "Lancia", "Land Rover", "Lexus", 
+  "Lotus", "Lucid", "Maserati", "McLaren", "Mercedes-Benz", "Mini", "Mitsubishi", "Nissan", "Opel", 
+  "Pagani", "Peugeot", "Polestar", "Porsche", "RAM", "Renault", "Rimac", "Rolls-Royce", "Saab", 
+  "Scion", "Seat", "Skoda", "Smart", "Subaru", "Suzuki", "Tesla", "Toyota", "Troller", "Vauxhall", 
+  "Volkswagen", "Volvo"
+].sort()
+
 export default function AddCarForm({ onComplete }) {
   const { user } = useAuth()
   const [step, setStep] = useState(1)
@@ -55,7 +66,21 @@ export default function AddCarForm({ onComplete }) {
     if (user) {
       fetchBrands()
     }
+    // Load saved draft
+    const savedDraft = localStorage.getItem('addCarDraft')
+    if (savedDraft) {
+      try {
+        setFormData(JSON.parse(savedDraft))
+      } catch (e) {
+        console.error('Failed to parse draft', e)
+      }
+    }
   }, [user])
+
+  // Save draft on change
+  useEffect(() => {
+    localStorage.setItem('addCarDraft', JSON.stringify(formData))
+  }, [formData])
 
   const fetchBrands = async () => {
     const { data } = await supabase.from('cars').select('brand').eq('owner_id', user.id)
@@ -121,7 +146,7 @@ export default function AddCarForm({ onComplete }) {
         brand: formData.brand,
         model: formData.model,
         year: parseInt(formData.year),
-        license_plate: formData.license_plate,
+        license_plate: formData.license_plate.toUpperCase(),
         color: formData.color || null,
         renavam: formData.renavam || null,
         
@@ -152,6 +177,7 @@ export default function AddCarForm({ onComplete }) {
 
       if (dbError) throw dbError
       
+      localStorage.removeItem('addCarDraft')
       onComplete()
     } catch (err) {
       console.error(err)
@@ -162,11 +188,11 @@ export default function AddCarForm({ onComplete }) {
   }
 
   return (
-    <div className="glass-dark rounded-2xl p-6 sm:p-10 border border-slate-800/60 w-full max-w-4xl mx-auto mt-8">
+    <div className="glass rounded-2xl p-6 sm:p-10 border border-border-color w-full max-w-4xl mx-auto mt-8">
       
       {/* Cabeçalho do Wizard */}
       <div className="mb-8">
-        <h2 className="text-xl sm:text-2xl font-black mb-6">Cadastrar Novo Veículo</h2>
+        <h2 className="text-xl sm:text-2xl font-black mb-6 text-main">Cadastrar Novo Veículo</h2>
         <div className="flex items-center justify-between relative px-2 sm:px-0">
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-primary/10 rounded-full z-0"></div>
           <div 
@@ -220,7 +246,9 @@ export default function AddCarForm({ onComplete }) {
                     placeholder="Digite ou selecione" 
                   />
                   <datalist id="brands-list">
-                    {existingBrands.map(b => <option key={b} value={b} />)}
+                    {[...new Set([...CAR_BRANDS, ...existingBrands])].sort().map(b => (
+                      <option key={b} value={b} />
+                    ))}
                   </datalist>
                 </div>
                 <div className="space-y-2">
@@ -269,10 +297,10 @@ export default function AddCarForm({ onComplete }) {
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Forma de Pagamento *</label>
-                  <select name="payment_method" value={formData.payment_method} onChange={handleChange} className="w-full bg-bg-card border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
-                    <option value="A vista">À vista</option>
-                    <option value="Financiado">Financiado</option>
-                    <option value="Consórcio">Consórcio</option>
+                  <select name="payment_method" value={formData.payment_method} onChange={handleChange} className="w-full bg-bg-card border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer dark:[color-scheme:dark]">
+                    <option value="A vista" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>À vista</option>
+                    <option value="Financiado" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Financiado</option>
+                    <option value="Consórcio" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Consórcio</option>
                   </select>
                 </div>
               </div>
@@ -307,32 +335,32 @@ export default function AddCarForm({ onComplete }) {
           {step === 3 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="space-y-6">
-                <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-2">Manutenção & Consumo</h4>
+                <h4 className="text-xs font-black text-accent uppercase tracking-widest border-b border-border-color pb-2">Manutenção & Consumo</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">Data Última Revisão</label>
-                    <input type="date" name="last_revision_date" value={formData.last_revision_date} onChange={handleChange} className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none [&::-webkit-calendar-picker-indicator]:filter-[invert(1)]" />
+                    <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Data Última Revisão</label>
+                    <input type="date" name="last_revision_date" value={formData.last_revision_date} onChange={handleChange} className="w-full bg-primary/5 border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">Km Atual</label>
-                    <input type="number" name="current_km" value={formData.current_km} onChange={handleChange} className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" placeholder="50000" />
+                    <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Km Atual</label>
+                    <input type="number" name="current_km" value={formData.current_km} onChange={handleChange} className="w-full bg-primary/5 border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" placeholder="50000" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">Km Próxima Revisão</label>
-                    <input type="number" name="next_revision_km" value={formData.next_revision_km} onChange={handleChange} className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" placeholder="60000" />
+                    <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Km Próxima Revisão</label>
+                    <input type="number" name="next_revision_km" value={formData.next_revision_km} onChange={handleChange} className="w-full bg-primary/5 border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" placeholder="60000" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">Km por Litro (Consumo)</label>
-                    <input type="number" step="0.1" name="km_per_liter" value={formData.km_per_liter} onChange={handleChange} className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" placeholder="12.5" />
+                    <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Km por Litro (Consumo)</label>
+                    <input type="number" step="0.1" name="km_per_liter" value={formData.km_per_liter} onChange={handleChange} className="w-full bg-primary/5 border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" placeholder="12.5" />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-6">
-                <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-2">Observações Adicionais</h4>
+                <h4 className="text-xs font-black text-accent uppercase tracking-widest border-b border-border-color pb-2">Observações Adicionais</h4>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Notas Estratégicas</label>
-                  <textarea name="notes" value={formData.notes} onChange={handleChange} rows="3" className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl py-3 px-4 focus:ring-2 focus:ring-accent outline-none resize-none" placeholder="Ex: Veículo recém envelopado..."></textarea>
+                  <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Notas Estratégicas</label>
+                  <textarea name="notes" value={formData.notes} onChange={handleChange} rows="3" className="w-full bg-primary/5 border border-border-color text-main rounded-xl py-3 px-4 focus:ring-2 focus:ring-accent outline-none resize-none" placeholder="Ex: Veículo recém envelopado..."></textarea>
                 </div>
               </div>
             </div>
@@ -340,12 +368,12 @@ export default function AddCarForm({ onComplete }) {
         </div>
 
         {/* Controles de Navegação */}
-        <div className="mt-8 flex items-center justify-between pt-6 border-t border-slate-800">
+        <div className="mt-8 flex items-center justify-between pt-6 border-t border-border-color">
           <button
             type="button"
             onClick={handlePrev}
             disabled={step === 1 || loading}
-            className={`flex items-center px-5 py-2.5 rounded-xl font-medium transition-colors ${step === 1 ? 'opacity-0 cursor-default' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+            className={`flex items-center px-5 py-2.5 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-colors ${step === 1 ? 'opacity-0 cursor-default' : 'text-muted-olive hover:bg-primary/10 hover:text-primary'}`}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar
@@ -354,7 +382,7 @@ export default function AddCarForm({ onComplete }) {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center px-6 py-2.5 bg-accent hover:bg-accent/80 text-white rounded-xl font-bold transition-all disabled:opacity-70 shadow-xl shadow-accent/20"
+            className="flex items-center px-6 py-2.5 bg-accent hover:opacity-90 text-white rounded-xl font-black transition-all disabled:opacity-70 shadow-xl shadow-accent/20 border border-accent/20"
           >
             {loading ? (
               <>

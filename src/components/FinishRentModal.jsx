@@ -1,16 +1,37 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { X, CircleNotch } from '@phosphor-icons/react'
 
 export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isInitialized, setIsInitialized] = useState(false)
 
   const [formData, setFormData] = useState({
     actual_end_date: new Date().toISOString().split('T')[0],
     final_km: rental.initial_km || '',
     payment_status: rental.payment_status
   })
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(`finishRentDraft_${rental.id}`)
+    if (saved) {
+      try {
+        setFormData(JSON.parse(saved))
+      } catch (e) {
+        console.error('Failed to parse draft', e)
+      }
+    }
+    setIsInitialized(true)
+  }, [rental.id])
+
+  // Save to localStorage on change
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem(`finishRentDraft_${rental.id}`, JSON.stringify(formData))
+    }
+  }, [formData, rental.id, isInitialized])
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -51,6 +72,7 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
 
       if (carError) throw carError
 
+      localStorage.removeItem(`finishRentDraft_${rental.id}`)
       onSuccess()
       onClose()
     } catch (err) {
@@ -104,9 +126,9 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-muted-olive">Status do Pagamento</label>
               <select name="payment_status" value={formData.payment_status} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none font-medium">
-                <option value="pending">Pendente</option>
-                <option value="paid">Pago (Total)</option>
-                <option value="partial">Pago (Parcial)</option>
+                <option value="Pendente" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Pendente</option>
+                <option value="Pago" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Pago</option>
+                <option value="Parcial" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Pago (Parcial)</option>
               </select>
             </div>
           </form>
