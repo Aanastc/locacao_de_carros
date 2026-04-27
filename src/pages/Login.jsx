@@ -16,13 +16,19 @@ export default function Login() {
     setError('')
     setLoading(true)
 
-    const { error } = await signIn(email, password)
-    
-    if (error) {
-      setError('Email ou senha incorretos.')
+    try {
+      const { error } = await signIn(email, password)
+      
+      if (error) {
+        setError('Email ou senha incorretos.')
+        setLoading(false)
+      } else {
+        navigate('/dashboard')
+      }
+    } catch (err) {
+      console.error(err)
+      setError('Erro inesperado ao conectar com o servidor.')
       setLoading(false)
-    } else {
-      navigate('/dashboard')
     }
   }
 

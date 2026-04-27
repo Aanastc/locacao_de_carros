@@ -27,17 +27,23 @@ export default function Register() {
 
     setLoading(true)
 
-    const { error } = await signUp(email, password, {
-      data: {
-        full_name: fullName,
+    try {
+      const { error } = await signUp(email, password, {
+        data: {
+          full_name: fullName,
+        }
+      })
+      
+      if (error) {
+        setError(error.message || 'Erro ao criar conta.')
+        setLoading(false)
+      } else {
+        navigate('/verify-email')
       }
-    })
-    
-    if (error) {
-      setError(error.message || 'Erro ao criar conta.')
+    } catch (err) {
+      console.error(err)
+      setError(err?.message || 'Erro inesperado ao conectar com o servidor.')
       setLoading(false)
-    } else {
-      navigate('/verify-email')
     }
   }
 

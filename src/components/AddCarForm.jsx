@@ -67,19 +67,23 @@ export default function AddCarForm({ onComplete }) {
       fetchBrands()
     }
     // Load saved draft
-    const savedDraft = localStorage.getItem('addCarDraft')
-    if (savedDraft) {
-      try {
+    try {
+      const savedDraft = localStorage.getItem('addCarDraft')
+      if (savedDraft) {
         setFormData(JSON.parse(savedDraft))
-      } catch (e) {
-        console.error('Failed to parse draft', e)
       }
+    } catch (e) {
+      console.warn('Failed to read draft from localStorage', e)
     }
   }, [user])
 
   // Save draft on change
   useEffect(() => {
-    localStorage.setItem('addCarDraft', JSON.stringify(formData))
+    try {
+      localStorage.setItem('addCarDraft', JSON.stringify(formData))
+    } catch (e) {
+      console.warn('Failed to save draft to localStorage', e)
+    }
   }, [formData])
 
   const fetchBrands = async () => {
