@@ -141,7 +141,7 @@ export default function IncomeModal({ rental, initialData, onClose, onSuccess })
             Cancelar
           </button>
           <button type="submit" form="incomeForm" disabled={loading} className="bg-success text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center shadow-lg shadow-success/20 active:scale-95">
-            {loading ? <CircleNotch className="w-4 h-4 mr-2 animate-spin" /> : 'Confirmar Recebimento'}
+            {loading ? <><CircleNotch className="w-4 h-4 mr-2 animate-spin" /><span>Salvando...</span></> : <span>Confirmar Recebimento</span>}
           </button>
         </div>
       </div>

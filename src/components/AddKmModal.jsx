@@ -103,7 +103,7 @@ export default function AddKmModal({ car, onClose, onSuccess }) {
               Cancelar
             </button>
             <button type="submit" disabled={loading} className="bg-accent hover:opacity-90 text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-accent/20">
-              {loading ? <CircleNotch className="w-5 h-5 animate-spin" /> : 'Salvar Registro'}
+              {loading ? <><CircleNotch className="w-5 h-5 animate-spin" /><span>Salvando...</span></> : <span>Salvar Registro</span>}
             </button>
           </div>
         </form>

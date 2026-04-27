@@ -155,7 +155,7 @@ export default function ExpenseModal({ car, onClose, onSuccess }) {
             disabled={loading}
             className="flex-1 py-3 px-4 rounded-xl bg-danger text-white font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-danger/20 disabled:opacity-50"
           >
-            {loading ? <CircleNotch className="w-5 h-5 animate-spin" /> : 'Registrar Despesa'}
+            {loading ? <><CircleNotch className="w-5 h-5 animate-spin" /><span>Salvando...</span></> : <span>Registrar Despesa</span>}
           </button>
         </div>
       </div>

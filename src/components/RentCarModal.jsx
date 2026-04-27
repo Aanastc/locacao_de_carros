@@ -300,7 +300,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
             Cancelar
           </button>
           <button type="submit" form="rentForm" disabled={loading} className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-xl font-black text-sm transition-all flex items-center shadow-lg shadow-primary/20">
-            {loading ? <CircleNotch className="w-4 h-4 mr-2 animate-spin" /> : 'Confirmar Aluguel'}
+            {loading ? <><CircleNotch className="w-4 h-4 mr-2 animate-spin" /><span>Salvando...</span></> : <span>Confirmar Aluguel</span>}
           </button>
         </div>
 

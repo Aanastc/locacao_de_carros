@@ -391,7 +391,7 @@ export default function AddCarForm({ onComplete }) {
             className={`flex items-center px-5 py-2.5 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-colors ${step === 1 ? 'opacity-0 cursor-default' : 'text-muted-olive hover:bg-primary/10 hover:text-primary'}`}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
+            <span>Voltar</span>
           </button>
           
           <button
@@ -402,16 +402,16 @@ export default function AddCarForm({ onComplete }) {
             {loading ? (
               <>
                 <CircleNotch className="w-5 h-5 mr-2 animate-spin" />
-                Salvando...
+                <span>Salvando...</span>
               </>
             ) : step === STEPS.length ? (
               <>
-                Cadastrar Veículo
+                <span>Cadastrar Veículo</span>
                 <CheckCircle className="w-5 h-5 ml-2" />
               </>
             ) : (
               <>
-                Próxima Etapa
+                <span>Próxima Etapa</span>
                 <ArrowRight className="w-4 h-4 ml-2" />
               </>
             )}

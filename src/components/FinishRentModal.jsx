@@ -139,7 +139,7 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
             Cancelar
           </button>
           <button type="submit" form="finishForm" disabled={loading} className="bg-primary text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center shadow-lg shadow-primary/20 active:scale-95">
-            {loading ? <CircleNotch className="w-4 h-4 mr-2 animate-spin" /> : 'Finalizar e Liberar Veículo'}
+            {loading ? <><CircleNotch className="w-4 h-4 mr-2 animate-spin" /><span>Finalizando...</span></> : <span>Finalizar e Liberar Veículo</span>}
           </button>
         </div>
 

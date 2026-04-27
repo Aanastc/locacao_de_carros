@@ -139,7 +139,7 @@ export default function EditIncomeModal({ income, onClose, onSuccess }) {
             Cancelar
           </button>
           <button type="submit" form="editIncomeForm" disabled={loading} className="bg-accent text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center shadow-lg shadow-accent/20">
-            {loading ? <CircleNotch className="w-4 h-4 mr-2 animate-spin" /> : 'Salvar Alterações'}
+            {loading ? <><CircleNotch className="w-4 h-4 mr-2 animate-spin" /><span>Salvando...</span></> : <span>Salvar Alterações</span>}
           </button>
         </div>
       </div>
