@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { X, CircleNotch, FloppyDisk, Car, CurrencyDollar, Wrench, FileText } from '@phosphor-icons/react'
+import { useAuth } from '../context/AuthContext'
 
 export default function EditCarModal({ car, onClose, onSuccess }) {
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isInitialized, setIsInitialized] = useState(false)
@@ -138,6 +140,18 @@ export default function EditCarModal({ car, onClose, onSuccess }) {
         .eq('id', car.id)
 
       if (updError) throw updError
+
+      // Se a quilometragem atual foi alterada, registrar no histórico
+      const newKm = parseNumber(formData.current_km)
+      if (newKm !== null && newKm !== car.current_km) {
+        await supabase.from('km_logs').insert([{
+          car_id: car.id,
+          user_id: user.id, // we need useAuth for this, let's check if it exists in EditCarModal
+          km: newKm,
+          date: new Date().toISOString(),
+          notes: 'Ajuste Manual (Edição do Veículo)'
+        }])
+      }
 
       localStorage.removeItem(`editCarDraft_${car.id}`)
       onSuccess(formData.license_plate.toUpperCase())
@@ -293,11 +307,11 @@ export default function EditCarModal({ car, onClose, onSuccess }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-muted-olive">KM Atual</label>
-                  <input type="number" name="current_km" value={formData.current_km} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-medium" />
+                  <input type="number" name="current_km" value={formData.current_km} onChange={handleChange} max="9999999" className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-medium" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-muted-olive">Próxima Rev. (KM)</label>
-                  <input type="number" name="next_revision_km" value={formData.next_revision_km} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-medium" />
+                  <input type="number" name="next_revision_km" value={formData.next_revision_km} onChange={handleChange} max="9999999" className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-medium" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-muted-olive">Última Revisão</label>

@@ -28,6 +28,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
   })
 
   const [isInitialized, setIsInitialized] = useState(false)
+  const [durationText, setDurationText] = useState('')
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -70,13 +71,17 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
       const diffDays = Math.max(1, Math.ceil(diffHours / 24))
       
       let multiplier = diffDays
+      let text = `Duração: ${diffDays} dia${diffDays > 1 ? 's' : ''}`
+
       if (formData.rental_model === 'Por Semana') {
-        // Calculate weeks (arredonda para cima para não ter frações de semana)
         multiplier = Math.ceil(diffDays / 7)
+        text = `Duração: ${multiplier} semana${multiplier > 1 ? 's' : ''}`
       } else if (formData.rental_model === 'Por Mês') {
-        // Calculate months (arredonda para cima para não ter frações de mês)
         multiplier = Math.ceil(diffDays / 30)
+        text = `Duração: ${multiplier} mês${multiplier > 1 ? 'es' : ''}`
       }
+
+      setDurationText(text)
 
       const unitValue = parseMaskedValue(formData.unit_price)
       if (!isNaN(unitValue)) {
@@ -271,6 +276,11 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
                     <p className="text-xs text-main opacity-70 mt-1">
                       Calculado automaticamente baseado nas datas.
                     </p>
+                    {durationText && (
+                      <p className="text-sm font-bold text-accent mt-2 bg-accent/10 inline-block px-2.5 py-1 rounded-lg border border-accent/20">
+                        {durationText}
+                      </p>
+                    )}
                   </div>
                   <div className="w-full sm:w-1/2">
                     <div className="relative">

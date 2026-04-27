@@ -120,7 +120,7 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
 
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-muted-olive">Km Final do Veículo</label>
-              <input required type="number" name="final_km" value={formData.final_km} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-medium" placeholder={`Atual: ${car.current_km} km`} />
+              <input required type="number" name="final_km" value={formData.final_km} onChange={handleChange} max="9999999" className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-medium" placeholder={`Atual: ${car.current_km} km`} />
             </div>
 
             <div className="space-y-2">

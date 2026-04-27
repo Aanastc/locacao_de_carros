@@ -73,7 +73,7 @@ export default function Dashboard() {
     try {
       const { data: carsData, error: carsError } = await supabase
         .from('cars')
-        .select('*')
+        .select('*, rentals(id)')
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false })
 
@@ -575,7 +575,7 @@ export default function Dashboard() {
               
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {/* Card Resumo Frota */}
-                <div className={`glass rounded-3xl p-6 sm:p-8 flex flex-col justify-between bg-gradient-to-br transition-all relative overflow-hidden group border-none shadow-xl ${
+                <div className={`glass rounded-3xl p-6 sm:p-8 flex flex-col justify-between bg-gradient-to-br transition-all relative overflow-hidden group border-none shadow-xl self-start ${
                   theme === 'dark' ? 'from-primary to-accent/40' : 'from-primary to-accent/20'
                 }`}>
                   <div className="absolute top-0 right-0 p-12 sm:p-16 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-all"></div>
@@ -625,14 +625,18 @@ export default function Dashboard() {
                         <p className="text-muted-olive text-sm font-medium mt-1">{car.year} • {car.color}</p>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4 pt-6 border-t border-border-color">
+                      <div className="grid grid-cols-3 gap-2 pt-6 border-t border-border-color">
                         <div>
                           <p className="text-[10px] text-muted-olive uppercase tracking-widest mb-1 font-bold">Placa</p>
-                          <p className="text-sm font-bold">{car.license_plate?.toUpperCase() || '-'}</p>
+                          <p className="text-sm font-bold truncate">{car.license_plate?.toUpperCase() || '-'}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-muted-olive uppercase tracking-widest mb-1 font-bold">KM Atual</p>
-                          <p className="text-sm font-bold">{car.current_km ? `${car.current_km.toLocaleString()} km` : '-'}</p>
+                          <p className="text-[10px] text-muted-olive uppercase tracking-widest mb-1 font-bold">Aluguéis</p>
+                          <p className="text-sm font-bold">{car.rentals?.length || 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-olive uppercase tracking-widest mb-1 font-bold">KM</p>
+                          <p className="text-sm font-bold truncate">{car.current_km ? `${car.current_km.toLocaleString()}` : '-'}</p>
                         </div>
                       </div>
 

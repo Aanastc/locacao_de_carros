@@ -3,17 +3,22 @@ import { supabase } from '../lib/supabase'
 import { X, CircleNotch } from '@phosphor-icons/react'
 import { useAuth } from '../context/AuthContext'
 
-export default function IncomeModal({ rental, onClose, onSuccess }) {
+export default function IncomeModal({ rental, initialData, onClose, onSuccess }) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isInitialized, setIsInitialized] = useState(false)
 
+  const formatInitialCurrency = (val) => {
+    if (val === null || val === undefined || val === '') return ''
+    return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val)
+  }
+
   const [formData, setFormData] = useState({
-    amount: '',
-    payment_date: new Date().toISOString().split('T')[0],
+    amount: initialData?.amount ? formatInitialCurrency(initialData.amount) : '',
+    payment_date: initialData?.date || new Date().toISOString().split('T')[0],
     payment_method: 'Pix',
-    notes: ''
+    notes: initialData?.notes || ''
   })
 
   // Load from localStorage on mount

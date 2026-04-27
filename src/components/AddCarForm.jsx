@@ -173,10 +173,21 @@ export default function AddCarForm({ onComplete }) {
         notes: formData.notes || null,
       }
 
-      const { error: dbError } = await supabase.from('cars').insert([payload])
+      const { data: newCarData, error: dbError } = await supabase.from('cars').insert([payload]).select()
 
       if (dbError) throw dbError
       
+      // Criar registro de KM inicial
+      if (newCarData && newCarData[0] && newCarData[0].current_km) {
+        await supabase.from('km_logs').insert([{
+          car_id: newCarData[0].id,
+          user_id: user.id,
+          km: newCarData[0].current_km,
+          date: newCarData[0].created_at || new Date().toISOString(),
+          notes: 'Cadastro Inicial'
+        }])
+      }
+
       localStorage.removeItem('addCarDraft')
       onComplete()
     } catch (err) {
@@ -342,8 +353,8 @@ export default function AddCarForm({ onComplete }) {
                     <input type="date" name="last_revision_date" value={formData.last_revision_date} onChange={handleChange} className="w-full bg-primary/5 border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Km Atual</label>
-                    <input type="number" name="current_km" value={formData.current_km} onChange={handleChange} className="w-full bg-primary/5 border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" placeholder="50000" />
+                    <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Km Atual *</label>
+                    <input required type="number" name="current_km" value={formData.current_km} onChange={handleChange} max="9999999" className="w-full bg-primary/5 border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" placeholder="50000" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Km Próxima Revisão</label>

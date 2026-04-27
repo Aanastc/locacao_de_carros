@@ -36,6 +36,7 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
   })
 
   const [isInitialized, setIsInitialized] = useState(false)
+  const [durationText, setDurationText] = useState('')
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -76,11 +77,17 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
       const diffDays = Math.max(1, Math.ceil(diffHours / 24))
       
       let multiplier = diffDays
+      let text = `Duração: ${diffDays} dia${diffDays > 1 ? 's' : ''}`
+
       if (formData.rental_model === 'Por Semana') {
         multiplier = Math.ceil(diffDays / 7)
+        text = `Duração: ${multiplier} semana${multiplier > 1 ? 's' : ''}`
       } else if (formData.rental_model === 'Por Mês') {
         multiplier = Math.ceil(diffDays / 30)
+        text = `Duração: ${multiplier} mês${multiplier > 1 ? 'es' : ''}`
       }
+
+      setDurationText(text)
 
       const unitValue = parseMaskedValue(formData.unit_price)
       if (!isNaN(unitValue) && unitValue > 0) {
@@ -229,7 +236,7 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">KM Inicial *</label>
-                  <input required type="number" name="initial_km" value={formData.initial_km} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" />
+                  <input required type="number" name="initial_km" value={formData.initial_km} onChange={handleChange} max="9999999" className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Modelo de Aluguel *</label>
@@ -257,6 +264,11 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
                     <p className="text-xs text-main opacity-70 mt-1">
                       Você pode editar este valor manualmente se necessário.
                     </p>
+                    {durationText && (
+                      <p className="text-sm font-bold text-accent mt-2 bg-accent/10 inline-block px-2.5 py-1 rounded-lg border border-accent/20">
+                        {durationText}
+                      </p>
+                    )}
                   </div>
                   <div className="w-full sm:w-1/2">
                     <div className="relative">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -16,6 +16,8 @@ import IncomeModal from '../components/IncomeModal'
 import EditIncomeModal from '../components/EditIncomeModal'
 import EditCarModal from '../components/EditCarModal'
 import EditRentModal from '../components/EditRentModal'
+import RentDetailsModal from '../components/RentDetailsModal'
+import AddKmModal from '../components/AddKmModal'
 import { PencilSimple } from '@phosphor-icons/react'
 
 export default function CarDetails() {
@@ -27,8 +29,10 @@ export default function CarDetails() {
   const [car, setCar] = useState(null)
   const [activeRental, setActiveRental] = useState(null)
   const [rentalsHistory, setRentalsHistory] = useState([])
+  const [selectedHistoryRent, setSelectedHistoryRent] = useState(null)
   const [expenses, setExpenses] = useState([])
   const [incomes, setIncomes] = useState([])
+  const [kmLogs, setKmLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false)
 
@@ -39,7 +43,76 @@ export default function CarDetails() {
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false)
   const [isEditCarModalOpen, setIsEditCarModalOpen] = useState(false)
   const [isEditRentModalOpen, setIsEditRentModalOpen] = useState(false)
+  const [isAddKmModalOpen, setIsAddKmModalOpen] = useState(false)
   const [editingIncome, setEditingIncome] = useState(null)
+  const [initialIncomeData, setInitialIncomeData] = useState(null)
+
+  const generatePaymentSchedule = (rental) => {
+    if (!rental) return []
+    const dates = []
+    let currentDate = new Date(rental.start_date)
+    const endDate = new Date(rental.expected_end_date)
+    
+    let diffMs = endDate - new Date(rental.start_date)
+    if (diffMs < 0) diffMs = 0
+    const diffHours = diffMs / (1000 * 60 * 60)
+    const diffDays = Math.max(1, Math.ceil(diffHours / 24))
+    
+    let multiplier = diffDays
+    let increment = { days: 1 }
+    
+    if (rental.rental_model === 'Por Semana') {
+      multiplier = Math.ceil(diffDays / 7)
+      increment = { days: 7 }
+    } else if (rental.rental_model === 'Por Mês') {
+      multiplier = Math.ceil(diffDays / 30)
+      increment = { months: 1 }
+    }
+    
+    const amountPerPeriod = Number(rental.total_price) / multiplier
+    
+    for (let i = 0; i < multiplier; i++) {
+      let paymentDate = new Date(currentDate)
+      
+      dates.push({
+        id: `sched-${i}`,
+        date: paymentDate.toISOString().split('T')[0],
+        amount: amountPerPeriod,
+        period: i + 1,
+        totalPeriods: multiplier
+      })
+      
+      if (increment.months) {
+        currentDate.setMonth(currentDate.getMonth() + increment.months)
+      } else {
+        currentDate.setDate(currentDate.getDate() + increment.days)
+      }
+    }
+    
+    return dates
+  }
+
+  const paymentSchedule = activeRental ? generatePaymentSchedule(activeRental).map(sched => {
+    const isPaid = incomes.some(inc => 
+      inc.rental_id === activeRental.id && 
+      (inc.notes?.includes(`parcela ${sched.period}/${sched.totalPeriods}`) || 
+      (inc.payment_date === sched.date && parseFloat(inc.amount) === parseFloat(sched.amount)))
+    )
+    return { ...sched, isPaid }
+  }) : []
+
+  useEffect(() => {
+    if (paymentSchedule.length > 0) {
+      const firstUnpaidIndex = paymentSchedule.findIndex(s => !s.isPaid)
+      if (firstUnpaidIndex !== -1) {
+        const rowId = `row-sched-${firstUnpaidIndex}`
+        const element = document.getElementById(rowId)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        }
+      }
+    }
+  }, [incomes, paymentSchedule.length])
 
   const fetchData = async () => {
     if (!user || !plate) return
@@ -104,6 +177,17 @@ export default function CarDetails() {
         setIncomes(filteredIncomes)
       } else if (incomesError) {
         console.error('Incomes fetch error:', incomesError)
+      }
+
+      // 5. Get KM Logs
+      const { data: kmLogsData, error: kmLogsError } = await supabase
+        .from('km_logs')
+        .select('*')
+        .eq('car_id', carData.id)
+        .order('date', { ascending: false })
+
+      if (!kmLogsError && kmLogsData) {
+        setKmLogs(kmLogsData)
       }
 
     } catch (error) {
@@ -234,6 +318,45 @@ export default function CarDetails() {
     return diffDays
   }
 
+  const kmHistory = useMemo(() => {
+    const history = []
+    const allRentals = [...rentalsHistory]
+    if (activeRental) allRentals.push(activeRental)
+
+    allRentals.forEach(rent => {
+      if (rent.initial_km) {
+        history.push({
+          id: `start-${rent.id}`,
+          date: rent.start_date,
+          km: rent.initial_km,
+          label: `Início: ${rent.client_name.split(' ')[0]}`,
+          type: 'start'
+        })
+      }
+      if (rent.final_km && rent.actual_end_date) {
+        history.push({
+          id: `end-${rent.id}`,
+          date: rent.actual_end_date,
+          km: rent.final_km,
+          label: `Fim: ${rent.client_name.split(' ')[0]}`,
+          type: 'end'
+        })
+      }
+    })
+
+    kmLogs.forEach(log => {
+      history.push({
+        id: `log-${log.id}`,
+        date: log.date,
+        km: log.km,
+        label: log.notes ? `Avulso: ${log.notes}` : `Lançamento Avulso`,
+        type: 'avulso'
+      })
+    })
+    
+    return history.sort((a, b) => new Date(b.date) - new Date(a.date))
+  }, [activeRental, rentalsHistory, kmLogs])
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -357,8 +480,44 @@ export default function CarDetails() {
               </div>
             </div>
 
+            {/* Histórico de Quilometragem */}
+            <div className="glass rounded-2xl p-6 border border-border-color shadow-sm">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-accent" />
+                  Histórico de Quilometragem
+                </h3>
+                <button 
+                  onClick={() => setIsAddKmModalOpen(true)}
+                  className="p-1.5 px-2.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest"
+                >
+                  <Plus className="w-3 h-3" /> Lançar
+                </button>
+              </div>
+              
+              <div className="space-y-3 max-h-64 overflow-y-auto pr-2 scrollbar-thin">
+                {kmHistory.length === 0 ? (
+                  <p className="text-sm text-slate-500 text-center py-4">Nenhum registro de km.</p>
+                ) : (
+                  kmHistory.map((record, index) => (
+                    <div key={record.id} className="flex justify-between items-center p-3 rounded-xl bg-primary/5 border border-border-color">
+                      <div>
+                        <p className="font-bold text-main">{record.km.toLocaleString()} <span className="text-xs font-medium text-muted-olive">km</span></p>
+                        <p className="text-[10px] uppercase font-black tracking-widest text-muted-olive mt-1">{new Date(record.date).toLocaleDateString('pt-BR')}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md ${record.type === 'start' ? 'bg-primary/20 text-primary' : 'bg-accent/20 text-accent'}`}>
+                          {record.label}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
             {/* Lista de Despesas */}
-            <div className="glass rounded-2xl p-6">
+            <div className="glass rounded-2xl p-6 border border-border-color shadow-sm">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-bold flex items-center gap-2">
                   <Wrench className="w-5 h-5 text-accent" />
@@ -450,16 +609,70 @@ export default function CarDetails() {
                     <div className="flex items-center justify-between p-2">
                       <div>
                         <p className="text-xs text-slate-400 uppercase font-semibold">Tempo Decorrido</p>
-                        <p className="text-3xl font-black text-accent">
-                          {calculateDaysRented(activeRental.start_date)} <span className="text-sm font-medium text-muted-olive">dias</span>
+                        <p className="text-3xl font-black text-accent flex items-baseline gap-1">
+                          {calculateDaysRented(activeRental.start_date)} 
+                          <span className="text-sm font-medium text-muted-olive">/ {Math.max(1, Math.ceil((new Date(activeRental.expected_end_date) - new Date(activeRental.start_date)) / (1000 * 60 * 60 * 24)))} dias</span>
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-slate-400 uppercase font-semibold">Total Acordado</p>
-                        <p className="text-2xl font-black">R$ {activeRental.total_price}</p>
-                        <span className="text-xs text-slate-500">{activeRental.rental_model}</span>
+                        <p className="text-2xl font-black">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(activeRental.total_price)}</p>
+                        <span className="text-[10px] font-bold text-muted-olive bg-primary/10 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                          R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(paymentSchedule[0]?.amount || 0)} {activeRental.rental_model.toLowerCase()}
+                        </span>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Cronograma de Pagamentos */}
+                <div className="mt-8 pt-6 border-t border-accent/10 relative z-10">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Cronograma de Pagamentos</h4>
+                  <div className="bg-primary/5 border border-border-color rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+                    {paymentSchedule.length === 0 ? (
+                      <p className="p-4 text-xs text-muted-olive italic">Nenhuma previsão gerada.</p>
+                    ) : (
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-900 sticky top-0 border-b border-slate-800 z-10">
+                          <tr className="text-[10px] uppercase font-black text-slate-300 tracking-widest">
+                            <th className="py-3 px-4">Parcela</th>
+                            <th className="py-3 px-4">Vencimento</th>
+                            <th className="py-3 px-4">Valor</th>
+                            <th className="py-3 px-4 text-right">Ação</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {paymentSchedule.map((sched, index) => (
+                            <tr id={`row-sched-${index}`} key={sched.id} className={`border-b border-border-color last:border-0 transition-colors ${sched.isPaid ? 'bg-success/5 opacity-80' : 'hover:bg-primary/10'}`}>
+                              <td className="py-3 px-4 font-bold text-main">{sched.period} / {sched.totalPeriods}</td>
+                              <td className="py-3 px-4">{new Date(sched.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+                              <td className="py-3 px-4 font-bold text-primary">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(sched.amount)}</td>
+                              <td className="py-3 px-4 text-right">
+                                {sched.isPaid ? (
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-success bg-success/20 px-3 py-1.5 rounded-md flex items-center justify-center gap-1 w-full sm:w-auto sm:inline-flex">
+                                    <CheckCircle weight="fill" className="w-3 h-3" /> Pago
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      setInitialIncomeData({
+                                        date: sched.date,
+                                        amount: sched.amount,
+                                        notes: `Referente à parcela ${sched.period}/${sched.totalPeriods} do aluguel ${activeRental.rental_model.toLowerCase()}.`
+                                      })
+                                      setIsIncomeModalOpen(true)
+                                    }}
+                                    className="text-[10px] font-bold uppercase tracking-wider text-white bg-accent hover:bg-accent/90 px-3 py-1.5 rounded-md transition-colors"
+                                  >
+                                    Marcar como Pago
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 </div>
 
@@ -467,7 +680,7 @@ export default function CarDetails() {
                 <div className="mt-8 pt-6 border-t border-accent/10 relative z-10">
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="text-sm font-bold uppercase tracking-wider text-slate-400">Pagamentos Recebidos</h4>
-                    <button onClick={() => setIsIncomeModalOpen(true)} className="text-xs bg-green-500/10 hover:bg-green-500/20 text-green-400 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 font-bold border border-green-500/20">
+                    <button onClick={() => { setInitialIncomeData(null); setIsIncomeModalOpen(true); }} className="text-xs bg-green-500/10 hover:bg-green-500/20 text-green-400 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 font-bold border border-green-500/20">
                       <Plus className="w-3 h-3" /> Adicionar Pagamento
                     </button>
                   </div>
@@ -480,7 +693,7 @@ export default function CarDetails() {
                         <div key={inc.id} className="flex justify-between items-center bg-primary/5 p-3 rounded-lg border border-border-color group/inc">
                           <div>
                             <p className="font-black text-success">R$ {inc.amount}</p>
-                            <p className="text-[10px] text-muted-olive font-bold uppercase">{inc.payment_method} • {new Date(inc.payment_date).toLocaleDateString('pt-BR')}</p>
+                            <p className="text-[10px] text-muted-olive font-bold uppercase">{inc.payment_method} • {new Date(inc.payment_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</p>
                             {inc.notes && <p className="text-xs text-muted-olive mt-1 italic">{inc.notes}</p>}
                           </div>
                           <div className="flex items-center gap-2">
@@ -533,7 +746,11 @@ export default function CarDetails() {
                     </thead>
                     <tbody className="text-sm">
                       {rentalsHistory.map(rent => (
-                        <tr key={rent.id} className="border-b border-border-color last:border-0 hover:bg-primary/5 transition-colors">
+                        <tr 
+                          key={rent.id} 
+                          onClick={() => setSelectedHistoryRent(rent)}
+                          className="border-b border-border-color last:border-0 hover:bg-primary/5 transition-colors cursor-pointer"
+                        >
                           <td className="py-4">
                             <p className="font-bold text-main">{rent.client_name}</p>
                             <p className="text-xs text-muted-olive">{rent.client_document || '-'}</p>
@@ -587,7 +804,11 @@ export default function CarDetails() {
       {isIncomeModalOpen && activeRental && (
         <IncomeModal 
           rental={activeRental}
-          onClose={() => setIsIncomeModalOpen(false)}
+          initialData={initialIncomeData}
+          onClose={() => {
+            setIsIncomeModalOpen(false)
+            setInitialIncomeData(null)
+          }}
           onSuccess={fetchData}
         />
       )}
@@ -619,6 +840,20 @@ export default function CarDetails() {
         <EditIncomeModal 
           income={editingIncome}
           onClose={() => setEditingIncome(null)}
+          onSuccess={fetchData}
+        />
+      )}
+      {selectedHistoryRent && (
+        <RentDetailsModal
+          rental={selectedHistoryRent}
+          onClose={() => setSelectedHistoryRent(null)}
+        />
+      )}
+
+      {isAddKmModalOpen && (
+        <AddKmModal 
+          car={car}
+          onClose={() => setIsAddKmModalOpen(false)}
           onSuccess={fetchData}
         />
       )}
