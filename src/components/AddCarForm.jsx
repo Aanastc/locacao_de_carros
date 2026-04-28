@@ -131,7 +131,32 @@ export default function AddCarForm({ onComplete }) {
     return parseFloat(formattedValue.replace(/\./g, '').replace(',', '.'))
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (step === 1) {
+      setLoading(true)
+      setError('')
+      const plateUpper = formData.license_plate.toUpperCase()
+      
+      try {
+        const { data: existingPlate } = await supabase
+          .from('cars')
+          .select('id')
+          .ilike('license_plate', plateUpper)
+          .eq('owner_id', user.id)
+          .maybeSingle()
+
+        if (existingPlate) {
+          setError(`Já existe um veículo com a placa ${plateUpper} cadastrado.`)
+          setLoading(false)
+          return
+        }
+      } catch (err) {
+        console.error("Erro ao validar placa:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
     if (step < STEPS.length) setStep(step + 1)
   }
 
@@ -149,7 +174,7 @@ export default function AddCarForm({ onComplete }) {
         owner_id: user.id,
         brand: formData.brand,
         model: formData.model,
-        year: parseInt(formData.year),
+        year: formData.year,
         license_plate: formData.license_plate.toUpperCase(),
         color: formData.color || null,
         renavam: formData.renavam || null,
@@ -182,14 +207,20 @@ export default function AddCarForm({ onComplete }) {
       if (dbError) throw dbError
       
       // Criar registro de KM inicial
-      if (newCarData && newCarData[0] && newCarData[0].current_km) {
-        await supabase.from('km_logs').insert([{
+      if (newCarData && newCarData[0] && newCarData[0].current_km != null) {
+        const { error: logError } = await supabase.from('km_logs').insert([{
           car_id: newCarData[0].id,
           user_id: user.id,
           km: newCarData[0].current_km,
-          date: newCarData[0].created_at || new Date().toISOString(),
+          date: new Date().toISOString(),
           notes: 'Cadastro Inicial'
         }])
+        
+        if (logError) {
+          console.error("Erro ao inserir km_log inicial (não bloqueante):", logError)
+          // Não lançamos o erro aqui para permitir que o cadastro do carro finalize 
+          // mesmo que o histórico inicial falhe por questões de RLS
+        }
       }
 
       localStorage.removeItem('addCarDraft')
@@ -272,7 +303,7 @@ export default function AddCarForm({ onComplete }) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Ano *</label>
-                  <input type="number" name="year" required min="1950" max={new Date().getFullYear() + 1} value={formData.year} onChange={handleChange} className="w-full bg-primary/5 border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" />
+                  <input type="text" name="year" required value={formData.year} onChange={handleChange} className="w-full bg-primary/5 border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" placeholder="Ex: 2024/2025" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Placa *</label>
@@ -402,7 +433,7 @@ export default function AddCarForm({ onComplete }) {
             {loading ? (
               <>
                 <CircleNotch className="w-5 h-5 mr-2 animate-spin" />
-                <span>Salvando...</span>
+                <span>{step === STEPS.length ? 'Salvando...' : 'Validando...'}</span>
               </>
             ) : step === STEPS.length ? (
               <>

@@ -24,15 +24,33 @@ export default function IncomeModal({ rental, initialData, onClose, onSuccess })
   // Load from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem(`incomeDraft_${rental.id}`)
-    if (saved) {
+    
+    if (initialData) {
+      // If we have initialData (installment button), force these values
+      setFormData({
+        amount: initialData.amount ? formatInitialCurrency(initialData.amount) : '',
+        payment_date: initialData.date ? initialData.date.split('T')[0] : new Date().toISOString().split('T')[0],
+        payment_method: 'Pix',
+        notes: initialData.notes || ''
+      })
+    } else if (saved) {
+      // If NO initialData but HAS a saved draft, use the draft
       try {
         setFormData(JSON.parse(saved))
       } catch (e) {
         console.error('Failed to parse draft', e)
       }
+    } else {
+      // Completely fresh form
+      setFormData({
+        amount: '',
+        payment_date: new Date().toISOString().split('T')[0],
+        payment_method: 'Pix',
+        notes: ''
+      })
     }
     setIsInitialized(true)
-  }, [rental.id])
+  }, [rental.id, initialData])
 
   // Save to localStorage on change
   useEffect(() => {
@@ -92,13 +110,13 @@ export default function IncomeModal({ rental, initialData, onClose, onSuccess })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-bg-card border border-border-color rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
         
-        <div className="flex justify-between items-center p-6 border-b border-border-color">
-          <h2 className="text-xl font-black text-main flex items-center gap-2">
+        <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
+          <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
             Registrar Recebimento
           </h2>
-          <button onClick={onClose} className="text-muted-olive hover:text-main transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-main transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -136,8 +154,8 @@ export default function IncomeModal({ rental, initialData, onClose, onSuccess })
           </form>
         </div>
 
-        <div className="p-6 border-t border-border-color bg-bg-main/50 flex justify-end gap-3">
-          <button type="button" onClick={onClose} disabled={loading} className="px-4 py-2 rounded-xl text-muted-olive hover:text-main font-bold text-sm">
+        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 flex justify-end gap-3">
+          <button type="button" onClick={onClose} disabled={loading} className="px-4 py-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white font-bold text-sm">
             Cancelar
           </button>
           <button type="submit" form="incomeForm" disabled={loading} className="bg-success text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center shadow-lg shadow-success/20 active:scale-95">

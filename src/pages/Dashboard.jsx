@@ -353,6 +353,7 @@ export default function Dashboard() {
             </div>
             
             <div className="flex items-center gap-1.5 sm:gap-4">
+              {/* Theme Toggle - Hidden for now
               <button 
                 onClick={toggleTheme}
                 className="p-1.5 sm:p-2 rounded-xl hover:bg-primary/10 transition-colors text-muted-olive hover:text-accent"
@@ -360,6 +361,7 @@ export default function Dashboard() {
               >
                 {theme === 'dark' ? <Sun className="w-5 h-5 sm:w-6 sm:h-6" /> : <Moon className="w-5 h-5 sm:w-6 sm:h-6" />}
               </button>
+              */}
 
               <Link to="/profile" className="flex items-center gap-2 text-sm text-muted-olive hover:text-primary transition-colors bg-primary/5 p-1 sm:py-1.5 sm:px-3 rounded-full border border-border-color hover:border-accent/50">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
@@ -452,7 +454,7 @@ export default function Dashboard() {
                     <select 
                       value={selectedMonth} 
                       onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                      className="flex-1 sm:flex-initial bg-bg-card border border-border-color text-main text-xs font-bold rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer"
+                      className="flex-1 sm:flex-initial bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer dark:[color-scheme:dark]"
                     >
                       {MONTHS.map((m, i) => (
                         <option key={m} value={i + 1}>{m}</option>
@@ -463,7 +465,7 @@ export default function Dashboard() {
                   <select 
                     value={selectedYear} 
                     onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                    className="flex-1 sm:flex-initial bg-bg-card border border-border-color text-main text-xs font-bold rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer"
+                    className="flex-1 sm:flex-initial bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer dark:[color-scheme:dark]"
                   >
                     {availableYears.map(y => (
                       <option key={y} value={y}>{y}</option>

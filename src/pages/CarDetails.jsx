@@ -5,8 +5,8 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { 
   ArrowLeft, Car, Calendar, CurrencyDollar, Wrench, FileText, 
-  User, CircleNotch, Plus, CheckCircle, WarningCircle, PlayCircle, MapPin, ClockCounterClockwise,
-  Sun, Moon, ShieldCheck, Phone, DownloadSimple, CaretDown
+  User, CircleNotch, CheckCircle, PlayCircle, MapPin, 
+  Sun, Moon, ShieldCheck, Phone, DownloadSimple, CaretDown, WarningCircle, Files, Plus, ClockCounterClockwise
 } from '@phosphor-icons/react'
 import * as XLSX from 'xlsx'
 import RentCarModal from '../components/RentCarModal'
@@ -119,7 +119,6 @@ export default function CarDetails() {
     setLoading(true)
     try {
       // 1. Get Car details
-      console.log('Fetching car with plate:', plate, 'for user:', user.id)
       const { data: carsData, error: carError } = await supabase
         .from('cars')
         .select('*')
@@ -184,7 +183,7 @@ export default function CarDetails() {
         .from('km_logs')
         .select('*')
         .eq('car_id', carData.id)
-        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (!kmLogsError && kmLogsData) {
         setKmLogs(kmLogsData)
@@ -581,11 +580,39 @@ export default function CarDetails() {
                         </p>
                         <p className="text-sm text-main flex items-center gap-2">
                           <FileText className="w-4 h-4 text-muted-olive" weight="fill" /> 
-                          <span className="text-muted-olive font-bold">CNH:</span> {activeRental.client_license || '-'}
+                          <span className="text-muted-olive font-bold">CNH:</span> {activeRental.client_cnh || '-'}
                         </p>
                       </div>
                     </div>
                     
+                    {/* Visualização de Documentos */}
+                    <div className="pt-4 border-t border-accent/10">
+                      <p className="text-[10px] text-muted-olive uppercase font-bold mb-3 tracking-widest">Documentos Disponíveis</p>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { url: activeRental.uber_file_url, label: 'Uber', color: 'bg-accent/10 text-accent' },
+                          { url: activeRental.criminal_record_file_url, label: 'Criminal', color: 'bg-primary/10 text-primary' },
+                          { url: activeRental.cnh_ear_file_url, label: 'EAR', color: 'bg-accent/10 text-accent' },
+                          { url: activeRental.residence_proof_file_url, label: 'Residência', color: 'bg-primary/10 text-primary' },
+                          { url: activeRental.sne_file_url, label: 'SNE', color: 'bg-accent/10 text-accent' },
+                        ].map(doc => doc.url && (
+                          <a 
+                            key={doc.label}
+                            href={doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-transparent text-[10px] font-black uppercase transition-all hover:scale-105 active:scale-95 ${doc.color} hover:shadow-lg`}
+                          >
+                            <Files className="w-3.5 h-3.5" />
+                            {doc.label}
+                          </a>
+                        ))}
+                        {!activeRental.uber_file_url && !activeRental.criminal_record_file_url && !activeRental.cnh_ear_file_url && !activeRental.residence_proof_file_url && !activeRental.sne_file_url && (
+                          <p className="text-[10px] text-muted-olive italic">Nenhum anexo disponível.</p>
+                        )}
+                      </div>
+                    </div>
+
                     {activeRental.security_deposit && (
                       <div className="pt-4 border-t border-accent/10">
                         <p className="text-xs text-slate-400 mb-1">Caução</p>

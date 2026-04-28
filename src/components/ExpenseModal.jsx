@@ -17,20 +17,14 @@ export default function ExpenseModal({ car, onClose, onSuccess }) {
     description: ''
   })
 
-  // Load from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem(`expenseDraft_${car.id}`)
     if (saved) {
-      try {
-        setFormData(JSON.parse(saved))
-      } catch (e) {
-        console.error('Failed to parse draft', e)
-      }
+      try { setFormData(JSON.parse(saved)) } catch (e) { console.error(e) }
     }
     setIsInitialized(true)
   }, [car.id])
 
-  // Save to localStorage on change
   useEffect(() => {
     if (isInitialized) {
       localStorage.setItem(`expenseDraft_${car.id}`, JSON.stringify(formData))
@@ -78,13 +72,12 @@ export default function ExpenseModal({ car, onClose, onSuccess }) {
       }])
 
       if (expError) throw expError
-
       localStorage.removeItem(`expenseDraft_${car.id}`)
       onSuccess()
       onClose()
     } catch (err) {
       console.error(err)
-      setError('Erro ao registrar despesa. Verifique os dados.')
+      setError('Erro ao registrar despesa.')
     } finally {
       setLoading(false)
     }
@@ -92,11 +85,11 @@ export default function ExpenseModal({ car, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-card border border-border-color rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
         
-        <div className="flex justify-between items-center p-6 border-b border-border-color/50">
-          <h2 className="text-xl font-black text-main">Lançar Despesa</h2>
-          <button onClick={onClose} className="text-muted-olive hover:text-accent transition-colors">
+        <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
+          <h2 className="text-xl font-black text-slate-900 dark:text-white">Lançar Despesa</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-main transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -106,56 +99,47 @@ export default function ExpenseModal({ car, onClose, onSuccess }) {
 
           <form id="expenseForm" onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Tipo de Despesa *</label>
-              <select name="expense_type" value={formData.expense_type} onChange={handleChange} className="w-full bg-primary/5 border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
-                <option value="Troca de óleo" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Troca de óleo</option>
-                <option value="Manutenção" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Manutenção</option>
-                <option value="Seguro" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Seguro</option>
-                <option value="Alinhamento" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Alinhamento</option>
-                <option value="Multas" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Multas</option>
-                <option value="Outros" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Outros (Digitar)</option>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipo de Despesa *</label>
+              <select name="expense_type" value={formData.expense_type} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer dark:[color-scheme:dark]">
+                <option value="Troca de óleo">Troca de óleo</option>
+                <option value="Manutenção">Manutenção</option>
+                <option value="Seguro">Seguro</option>
+                <option value="Alinhamento">Alinhamento</option>
+                <option value="Multas">Multas</option>
+                <option value="Outros">Outros (Digitar)</option>
               </select>
             </div>
 
             {formData.expense_type === 'Outros' && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Qual despesa? *</label>
-                <input required type="text" name="custom_type" value={formData.custom_type} onChange={handleChange} className="w-full bg-primary/5 border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" placeholder="Ex: Lavagem" />
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Qual despesa? *</label>
+                <input required type="text" name="custom_type" value={formData.custom_type} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none" />
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Valor (R$) *</label>
-              <input required type="text" inputMode="numeric" name="amount" value={formData.amount} onChange={handleCurrencyChange} className="w-full bg-primary/5 border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" placeholder="0,00" />
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Valor (R$) *</label>
+              <input required type="text" inputMode="numeric" name="amount" value={formData.amount} onChange={handleCurrencyChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none" />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Data da Despesa *</label>
-              <input required type="date" name="expense_date" value={formData.expense_date} onChange={handleChange} className="w-full bg-primary/5 border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" />
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Data da Despesa *</label>
+              <input required type="date" name="expense_date" value={formData.expense_date} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Descrição (Opcional)</label>
-              <textarea name="description" value={formData.description} onChange={handleChange} rows="2" className="w-full bg-primary/5 border border-border-color rounded-xl px-4 py-3 text-main focus:ring-2 focus:ring-accent outline-none resize-none" placeholder="Detalhes do custo..."></textarea>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observações (Opcional)</label>
+              <textarea name="description" value={formData.description} onChange={handleChange} rows="3" className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none resize-none font-medium" placeholder="Ex: Peças trocadas, oficina, etc..."></textarea>
             </div>
           </form>
         </div>
 
-        <div className="p-6 border-t border-border-color/50 flex gap-3">
-          <button 
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-3 px-4 rounded-xl border border-border-color text-muted-olive font-bold text-sm hover:bg-muted-olive/5 transition-all"
-          >
+        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 flex gap-3">
+          <button type="button" onClick={onClose} className="flex-1 py-3 px-4 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white font-bold text-sm">
             Cancelar
           </button>
-          <button 
-            type="submit"
-            form="expenseForm"
-            disabled={loading}
-            className="flex-1 py-3 px-4 rounded-xl bg-danger text-white font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-danger/20 disabled:opacity-50"
-          >
-            {loading ? <><CircleNotch className="w-5 h-5 animate-spin" /><span>Salvando...</span></> : <span>Registrar Despesa</span>}
+          <button type="submit" form="expenseForm" disabled={loading} className="flex-1 py-3 px-4 rounded-xl bg-danger text-white font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-danger/20">
+            {loading ? <CircleNotch className="w-5 h-5 animate-spin" /> : <span>Registrar Despesa</span>}
           </button>
         </div>
       </div>
