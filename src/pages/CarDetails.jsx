@@ -6,8 +6,10 @@ import { useTheme } from '../context/ThemeContext'
 import { 
   ArrowLeft, Car, Calendar, CurrencyDollar, Wrench, FileText, 
   User, CircleNotch, CheckCircle, PlayCircle, MapPin, 
-  Sun, Moon, ShieldCheck, Phone, DownloadSimple, CaretDown, WarningCircle, Files, Plus, ClockCounterClockwise
+  ShieldCheck, Phone, DownloadSimple, CaretDown, WarningCircle, Files, Plus, ClockCounterClockwise
 } from '@phosphor-icons/react'
+
+
 import * as XLSX from 'xlsx'
 import RentCarModal from '../components/RentCarModal'
 import FinishRentModal from '../components/FinishRentModal'
@@ -112,7 +114,7 @@ export default function CarDetails() {
         }
       }
     }
-  }, [incomes, paymentSchedule.length])
+  }, [incomes, activeRental?.id])
 
   const fetchData = async () => {
     if (!user || !plate) return
@@ -367,41 +369,7 @@ export default function CarDetails() {
   if (!car) return null
 
   return (
-    <div className="min-h-screen pb-12 transition-colors duration-300">
-      {/* Header Premium */}
-      <header className="glass sticky top-0 z-40 border-b border-border-color">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16 gap-4">
-            <Link to="/dashboard" className="p-2 hover:bg-primary/10 rounded-full transition-colors text-muted-olive hover:text-primary">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div className="flex-1 flex justify-between items-center">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-xl sm:text-2xl font-black text-main">
-                    {car.brand} <span className="text-primary">{car.model}</span>
-                  </h1>
-              <button 
-                onClick={() => setIsEditCarModalOpen(true)}
-                className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 shadow-lg shadow-primary/20"
-              >
-                <PencilSimple className="w-4 h-4" /> Editar
-              </button>
-                </div>
-                <p className="text-xs text-muted-olive uppercase tracking-wider font-bold">{car.license_plate}</p>
-              </div>
-              <button 
-                onClick={toggleTheme}
-                className="p-2 rounded-xl hover:bg-primary/10 transition-colors text-muted-olive hover:text-accent"
-              >
-                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
         {/* Painel de Ações Rápidas */}
         <div className="flex flex-wrap items-center gap-4">
@@ -800,7 +768,6 @@ export default function CarDetails() {
 
           </div>
         </div>
-      </main>
 
       {/* Modals */}
       {isRentModalOpen && (

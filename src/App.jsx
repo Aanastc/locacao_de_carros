@@ -30,6 +30,10 @@ function PublicRoute({ children }) {
   return children
 }
 
+import Cars from './pages/Cars'
+import Reports from './pages/Reports'
+import MainLayout from './components/MainLayout'
+
 function AppRoutes() {
   return (
     <Routes>
@@ -49,21 +53,19 @@ function AppRoutes() {
           <VerifyEmail />
         </PublicRoute>
       } />
-      <Route path="/dashboard" element={
+      
+      {/* Protected Routes with MainLayout */}
+      <Route element={
         <PrivateRoute>
-          <Dashboard />
+          <MainLayout />
         </PrivateRoute>
-      } />
-      <Route path="/car/:plate" element={
-        <PrivateRoute>
-          <CarDetails />
-        </PrivateRoute>
-      } />
-      <Route path="/profile" element={
-        <PrivateRoute>
-          <Profile />
-        </PrivateRoute>
-      } />
+      }>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/cars" element={<Cars />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/car/:plate" element={<CarDetails />} />
+        <Route path="/profile" element={<Profile />} />
+      </Route>
     </Routes>
   )
 }

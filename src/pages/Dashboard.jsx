@@ -1,17 +1,25 @@
+// Dashboard Component - Operational View
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 import AddCarForm from '../components/AddCarForm'
+
+
 import * as XLSX from 'xlsx'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell
 } from 'recharts'
 import { 
   Car, SignOut, Gear, Calendar, ClockCounterClockwise, User, 
-  CircleNotch, Plus, Sun, Moon, DownloadSimple, Funnel, ChartBar, CaretDown, FileText
+  CircleNotch, Plus, Sun, Moon, DownloadSimple, Funnel, ChartBar, 
+  CaretDown, FileText, WarningCircle, ArrowUpRight, ArrowDownRight, 
+  TrendUp, CheckCircle, Clock
 } from '@phosphor-icons/react'
+import { format, addDays, isAfter, isBefore, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+
 
 export default function Dashboard() {
   const { user, signOut } = useAuth()
@@ -31,7 +39,26 @@ export default function Dashboard() {
   const [availableYears, setAvailableYears] = useState([])
   
   const [userProfile, setUserProfile] = useState(null)
-  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false)
+  
+  // Novos estados para Dashboard operacional
+  const [alerts, setAlerts] = useState([])
+  const [recentActivity, setRecentActivity] = useState([])
+  const [fleetStats, setFleetStats] = useState({
+    utilization: 0,
+    maintenanceCount: 0,
+    available: 0,
+    rented: 0,
+    maintenance: 0
+  })
+
+  // Financial Panorama States
+  const [financialStats, setFinancialStats] = useState({
+    monthExpenses: 0,
+    yearRevenue: 0,
+    yearProfit: 0
+  })
+
+  const [selectedCarForRent, setSelectedCarForRent] = useState(null)
 
   useEffect(() => {
     if (user) {
@@ -71,17 +98,18 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     setLoadingCars(true)
     try {
+      // 1. Fetch Cars & Rentals
       const { data: carsData, error: carsError } = await supabase
         .from('cars')
-        .select('*, rentals(id)')
+        .select('*, rentals(*)')
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false })
 
       if (carsError) throw carsError
       setCars(carsData || [])
 
+      // 2. Determine available periods
       let startDate, endDate
-      
       if (filterPeriod === 'month') {
         startDate = new Date(selectedYear, selectedMonth - 1, 1).toISOString()
         endDate = new Date(selectedYear, selectedMonth, 0, 23, 59, 59).toISOString()
@@ -90,23 +118,124 @@ export default function Dashboard() {
         endDate = new Date(selectedYear, 11, 31, 23, 59, 59).toISOString()
       }
 
-      const { data: expData } = await supabase
-        .from('expenses')
-        .select('*, cars(brand, model)')
-        .eq('user_id', user.id)
-        .gte('expense_date', startDate)
-        .lte('expense_date', endDate)
+      // 3. Fetch Financials
+      const [expRes, incRes] = await Promise.all([
+        supabase.from('expenses').select('*, cars(brand, model)').eq('user_id', user.id).gte('expense_date', startDate).lte('expense_date', endDate),
+        supabase.from('incomes').select('*, rentals(client_name)').eq('user_id', user.id).gte('payment_date', startDate).lte('payment_date', endDate)
+      ])
       
-      setExpenses(expData || [])
+      const expData = expRes.data || []
+      const incData = incRes.data || []
+      setExpenses(expData)
+      setIncomes(incData)
 
-      const { data: incData } = await supabase
-        .from('incomes')
-        .select('*, rentals(client_name)')
-        .eq('user_id', user.id)
-        .gte('payment_date', startDate)
-        .lte('payment_date', endDate)
+      // 4. Calculate Alerts & Activity
+      const newAlerts = []
+      const activeRentals = []
+      
+      carsData?.forEach(car => {
+        // Maintenance Alert (Simple check: every 10k km)
+        if (car.current_km && car.current_km % 10000 > 9000) {
+          newAlerts.push({
+            type: 'maintenance',
+            title: 'Revisão Próxima',
+            desc: `${car.brand} ${car.model} está com ${car.current_km.toLocaleString()} km`,
+            carPlate: car.license_plate
+          })
+        }
 
-      setIncomes(incData || [])
+        const active = car.rentals?.find(r => r.status === 'active')
+        if (active) {
+          activeRentals.push(active)
+          // Rental Expiring Alert
+          const expDate = new Date(active.expected_end_date)
+          const today = new Date()
+          const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24))
+          
+          if (diffDays <= 2 && diffDays >= 0) {
+            newAlerts.push({
+              type: 'rental_end',
+              title: 'Aluguel Vencendo',
+              desc: `${active.client_name.split(' ')[0]} entrega o ${car.brand} ${diffDays === 0 ? 'hoje' : `em ${diffDays}d`}`,
+              carPlate: car.license_plate
+            })
+          }
+        }
+      })
+      setAlerts(newAlerts)
+
+      // Recent Activity (Merge and Sort)
+      const activity = [
+        ...incData.map(i => ({ ...i, activityType: 'income' })),
+        ...expData.map(e => ({ ...e, activityType: 'expense' }))
+      ].sort((a, b) => new Date(b.payment_date || b.expense_date) - new Date(a.payment_date || a.expense_date))
+      .slice(0, 5)
+      
+      setRecentActivity(activity)
+
+      // Fleet Stats
+      const utilization = carsData.length > 0 ? (activeRentals.length / carsData.length) * 100 : 0
+      
+      const availableCount = carsData.filter(c => c.status === 'Disponível').length
+      const rentedCount = carsData.filter(c => c.status === 'Alugado').length
+      const maintenanceCount = carsData.filter(c => c.status === 'Manutenção').length
+
+      setFleetStats({
+        utilization,
+        maintenanceCount: newAlerts.filter(a => a.type === 'maintenance').length,
+        available: availableCount,
+        rented: rentedCount,
+        maintenance: maintenanceCount
+      })
+
+      // 5. Calculate Financial Panorama (Month & Year)
+      const now = new Date()
+      const mStart = startOfMonth(now).toISOString()
+      const mEnd = endOfMonth(now).toISOString()
+      const yStart = startOfYear(now).toISOString()
+      const yEnd = endOfYear(now).toISOString()
+
+      // We need a wider fetch for year stats
+      const [yearExpRes, yearIncRes] = await Promise.all([
+        supabase.from('expenses').select('amount').eq('user_id', user.id).gte('expense_date', yStart).lte('expense_date', yEnd),
+        supabase.from('incomes').select('amount').eq('user_id', user.id).gte('payment_date', yStart).lte('payment_date', yEnd)
+      ])
+
+      const yearExpenses = (yearExpRes.data || []).reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
+      const yearRevenue = (yearIncRes.data || []).reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
+      
+      const monthExpenses = (expData || [])
+        .filter(e => {
+          const d = new Date(e.expense_date)
+          return d >= startOfMonth(now) && d <= endOfMonth(now)
+        })
+        .reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
+
+      setFinancialStats({
+        monthExpenses,
+        yearRevenue,
+        yearProfit: yearRevenue - yearExpenses
+      })
+
+      // 6. Payment Alerts (Enhanced)
+      const paymentAlerts = []
+      const activeRents = carsData?.flatMap(c => c.rentals || []).filter(r => r.status === 'active')
+      
+      activeRents.forEach(rent => {
+        if (rent.payment_status === 'Pendente') {
+          const car = carsData.find(c => c.id === rent.car_id)
+          paymentAlerts.push({
+            type: 'payment_pending',
+            title: 'Pagamento Pendente',
+            desc: `${rent.client_name} - ${car?.brand} ${car?.model}`,
+            carPlate: car?.license_plate,
+            lessee: rent.client_name,
+            amount: rent.total_price
+          })
+        }
+      })
+      
+      setAlerts([...newAlerts, ...paymentAlerts])
 
     } catch (error) {
       console.error('Erro ao buscar dados do dashboard:', error.message)
@@ -329,337 +458,182 @@ export default function Dashboard() {
 
   const isFirstAccess = cars.length === 0
 
-  const totalIncomes = incomes.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
-  const totalExpenses = expenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
-  const netProfit = totalIncomes - totalExpenses
-
-  const availableCars = cars.filter(c => c.status === 'Disponível').length
-  const rentedCars = cars.filter(c => c.status === 'Alugado').length
-  const maintenanceCars = cars.filter(c => c.status === 'Manutenção').length
-
   const MONTHS = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ]
+  ];
 
   return (
-    <div className="min-h-screen flex flex-col transition-colors duration-300">
-      {/* Header Premium */}
-      <header className="glass sticky top-0 z-50 border-b border-slate-800/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <img src="/logo.jpeg" alt="Logo" className="h-10 w-auto object-contain" />
-            </div>
-            
-            <div className="flex items-center gap-1.5 sm:gap-4">
-              {/* Theme Toggle - Hidden for now
-              <button 
-                onClick={toggleTheme}
-                className="p-1.5 sm:p-2 rounded-xl hover:bg-primary/10 transition-colors text-muted-olive hover:text-accent"
-                title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
-              >
-                {theme === 'dark' ? <Sun className="w-5 h-5 sm:w-6 sm:h-6" /> : <Moon className="w-5 h-5 sm:w-6 sm:h-6" />}
-              </button>
-              */}
-
-              <Link to="/profile" className="flex items-center gap-2 text-sm text-muted-olive hover:text-primary transition-colors bg-primary/5 p-1 sm:py-1.5 sm:px-3 rounded-full border border-border-color hover:border-accent/50">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                  {avatar ? <img src={avatar} alt="Avatar" className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-muted-olive" />}
-                </div>
-                <span className="hidden sm:inline font-medium text-xs sm:text-sm">Olá, <strong className="text-primary">{userName.split(' ')[0]}</strong></span>
-              </Link>
-
-              <button 
-                onClick={handleSignOut}
-                className="flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-2 rounded-xl text-danger hover:bg-danger/10 transition-all font-bold text-sm"
-                title="Sair do sistema"
-              >
-                <SignOut className="w-5 h-5 sm:w-6 sm:h-6" />
-                <span className="hidden md:inline">Sair</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-700">
         
-        {(isFirstAccess || showAddForm) ? (
+        {showAddForm ? (
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-black">
-                  {isFirstAccess ? 'Bem-vindo ao CarRental! 👋' : 'Adicionar Veículo'}
-                </h1>
-                <p className="text-muted-olive mt-1">
-                  {isFirstAccess 
-                    ? 'Para começar a gerenciar sua locadora, precisamos que você cadastre seu primeiro veículo.' 
-                    : 'Preencha os detalhes para incluir mais um veículo na sua frota.'}
-                </p>
-              </div>
-              {!isFirstAccess && (
-                <button 
-                  onClick={() => setShowAddForm(false)}
-                  className="text-muted-olive hover:text-primary transition-colors"
-                >
-                  Cancelar
-                </button>
-              )}
+              <h1 className="text-2xl sm:text-3xl font-black">Adicionar Veículo</h1>
+              <button onClick={() => setShowAddForm(false)} className="text-muted-olive hover:text-primary font-bold">Cancelar</button>
             </div>
             <AddCarForm onComplete={handleCarAdded} />
           </div>
         ) : (
           <>
-            <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            {/* Header com Boas-vindas */}
+            <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-black">Dashboard</h1>
-                <p className="text-slate-400 mt-1 text-sm sm:text-base">Gerencie seus aluguéis e explore sua frota.</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2">Visão Geral</p>
+                <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-main">
+                  Olá, {userName.split(' ')[0]}
+                </h1>
+                <p className="text-muted-olive mt-2 font-medium opacity-70">Sua frota está operando com {fleetStats.utilization.toFixed(0)}% de capacidade hoje.</p>
               </div>
-              <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3">
-                <button 
-                  onClick={handleExportAnnual}
-                  className="bg-primary hover:bg-primary/90 text-white px-4 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-                >
-                  <DownloadSimple className="w-5 h-5" />
-                  <span className="text-xs">Baixar Planilha</span>
+              <div className="flex flex-wrap items-center gap-3">
+                <button onClick={handleExportAnnual} className="px-4 py-2 text-xs font-bold hover:bg-primary/5 rounded-xl transition-all flex items-center gap-2 border border-border-color">
+                  <DownloadSimple weight="bold" className="w-4 h-4" /> Exportar
                 </button>
-
-                <button 
-                  onClick={() => setShowAddForm(true)}
-                  className="bg-accent hover:opacity-90 text-white px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-accent/20 active:scale-95"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span className="text-xs">Novo Veículo</span>
+                <button onClick={() => navigate('/cars?status=Disponível')} className="px-4 py-2 text-xs font-bold bg-accent/10 text-accent hover:bg-accent/20 rounded-xl transition-all flex items-center gap-2 border border-accent/20">
+                  <FileText weight="bold" className="w-4 h-4" /> Lançar Aluguel
+                </button>
+                <button onClick={() => setShowAddForm(true)} className="bg-primary text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:translate-y-[-2px] transition-all flex items-center gap-2">
+                  <Plus weight="bold" className="w-4 h-4" /> Novo Veículo
                 </button>
               </div>
             </div>
 
-            {/* Painel de Filtros */}
-            <div className="glass rounded-2xl p-4 mb-8 border border-border-color flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-              <div className="flex items-center gap-2 text-muted-olive">
-                <Funnel className="w-4 h-4" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Filtros:</span>
+            {/* Quick Stats - Minimalist */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              <div className="relative group p-6 bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-border-color/50">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Gastos (Mês Atual)</p>
+                <h3 className="text-3xl font-black tracking-tighter text-danger">
+                  <span className="text-sm font-bold mr-1">R$</span>
+                  {financialStats.monthExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </h3>
               </div>
-              
-              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                <div className="flex bg-primary/5 rounded-xl p-1 border border-border-color">
-                  <button onClick={() => setFilterPeriod('month')} className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all ${filterPeriod === 'month' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>MENSAL</button>
-                  <button onClick={() => setFilterPeriod('year')} className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all ${filterPeriod === 'year' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>ANUAL</button>
-                </div>
+              <div className="relative group p-6 bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-border-color/50">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Renda (Ano)</p>
+                <h3 className="text-3xl font-black tracking-tighter text-success">
+                  <span className="text-sm font-bold mr-1">R$</span>
+                  {financialStats.yearRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </h3>
+              </div>
+              <div className="relative group p-6 bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-border-color/50">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Lucro (Ano)</p>
+                <h3 className="text-3xl font-black tracking-tighter text-primary">
+                  <span className="text-sm font-bold mr-1">R$</span>
+                  {financialStats.yearProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </h3>
+              </div>
+              <div className="relative group p-6 bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-border-color/50">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Pendências</p>
+                <h3 className={`text-3xl font-black tracking-tighter ${alerts.length > 0 ? 'text-orange-500' : 'text-success'}`}>
+                  {alerts.length} <span className="text-xs font-bold">alertas</span>
+                </h3>
+              </div>
+            </div>
 
-                <div className="flex items-center gap-2 flex-1 sm:flex-initial">
-                  {filterPeriod === 'month' && (
-                    <select 
-                      value={selectedMonth} 
-                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                      className="flex-1 sm:flex-initial bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer dark:[color-scheme:dark]"
-                    >
-                      {MONTHS.map((m, i) => (
-                        <option key={m} value={i + 1}>{m}</option>
-                      ))}
-                    </select>
-                  )}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+              {/* Financial Section */}
+              <div className="lg:col-span-2 space-y-8">
+                <div className="bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] p-6 sm:p-10 border border-border-color/50">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
+                    <div>
+                      <h3 className="text-2xl font-black tracking-tight mb-1">Fluxo Financeiro</h3>
+                      <p className="text-xs text-muted-olive font-medium">Comparativo entre receitas e despesas operacionais.</p>
+                    </div>
+                    <div className="flex bg-primary/5 rounded-2xl p-1 border border-border-color/50">
+                      <button onClick={() => setFilterPeriod('month')} className={`px-5 py-2 text-[10px] font-black rounded-xl transition-all ${filterPeriod === 'month' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>MENSAL</button>
+                      <button onClick={() => setFilterPeriod('year')} className={`px-5 py-2 text-[10px] font-black rounded-xl transition-all ${filterPeriod === 'year' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>ANUAL</button>
+                    </div>
+                  </div>
                   
-                  <select 
-                    value={selectedYear} 
-                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                    className="flex-1 sm:flex-initial bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer dark:[color-scheme:dark]"
-                  >
-                    {availableYears.map(y => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Painel Analítico: Gráfico & Cards */}
-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-12">
-              
-              {/* Gráfico de Rendimento */}
-              <div className="xl:col-span-3 glass rounded-2xl p-4 sm:p-6 border border-border-color flex flex-col">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                  <h3 className="text-base sm:text-lg font-black flex items-center gap-2">
-                    <ChartBar className="w-5 h-5 text-accent" />
-                    Desempenho Financeiro
-                  </h3>
-                  <div className="flex items-center gap-3 text-xs font-bold">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-accent"></div>
-                      <span className="text-muted-olive uppercase tracking-widest text-[9px]">Receitas</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-danger"></div>
-                      <span className="text-muted-olive uppercase tracking-widest text-[9px]">Despesas</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="w-full h-[250px] sm:h-[300px] mt-2">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} margin={{ top: 10, right: 0, left: -15, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#374151' : '#E5E7EB'} opacity={0.2} />
-                      <XAxis 
-                        dataKey="name" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: theme === 'dark' ? '#9CA3AF' : '#4B5563', fontSize: 9, fontWeight: 'bold' }} 
-                        dy={10}
-                      />
-                      <YAxis 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: theme === 'dark' ? '#9CA3AF' : '#4B5563', fontSize: 9, fontWeight: 'bold' }}
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: theme === 'dark' ? '#111827' : '#FFFFFF', 
-                          borderColor: theme === 'dark' ? '#374151' : '#E5E7EB', 
-                          borderRadius: '12px',
-                          boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.2)',
-                          fontSize: '12px'
-                        }}
-                        cursor={{ fill: 'currentColor', opacity: 0.05 }}
-                      />
-                      <Bar 
-                        dataKey="Receitas" 
-                        fill={theme === 'dark' ? '#22C55E' : '#16A34A'} 
-                        radius={[4, 4, 0, 0]} 
-                        barSize={chartData.length > 12 ? 8 : 24}
-                      />
-                      <Bar 
-                        dataKey="Despesas" 
-                        fill={theme === 'dark' ? '#EF4444' : '#DC2626'} 
-                        radius={[4, 4, 0, 0]} 
-                        barSize={chartData.length > 12 ? 8 : 24}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Cards Financeiros Laterais */}
-              <div className="space-y-6">
-                <div className="glass rounded-2xl p-6 bg-gradient-to-br hover:from-green-500/5 transition-all group">
-                  <h4 className="text-muted-olive text-xs font-bold uppercase tracking-wider mb-1">Receitas</h4>
-                  <p className="text-2xl font-black text-success">R$ {totalIncomes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                  <div className="mt-4 h-1 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-success w-full animate-in slide-in-from-left duration-1000"></div>
+                  <div className="h-[320px] w-full min-h-[320px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.05} />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: '700', fill: 'var(--text-muted)' }} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: '700', fill: 'var(--text-muted)' }} />
+                        <Tooltip 
+                          cursor={{ fill: 'var(--primary)', opacity: 0.03 }}
+                          contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '16px' }} 
+                        />
+                        <Bar dataKey="Receitas" fill="var(--success)" radius={[6, 6, 0, 0]} barSize={filterPeriod === 'month' ? 8 : 32} />
+                        <Bar dataKey="Despesas" fill="var(--primary)" radius={[6, 6, 0, 0]} barSize={filterPeriod === 'month' ? 8 : 32} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
 
-                <div className="glass rounded-2xl p-6 bg-gradient-to-br hover:from-danger/5 transition-all">
-                  <h4 className="text-muted-olive text-xs font-bold uppercase tracking-wider mb-1">Despesas</h4>
-                  <p className="text-2xl font-black text-danger">R$ {totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                  <div className="mt-4 h-1 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-danger w-full animate-in slide-in-from-left duration-1000"></div>
-                  </div>
-                </div>
-
-                <div className={`glass rounded-2xl p-6 transition-all ${netProfit >= 0 ? 'border-accent/20 hover:from-accent/5' : 'border-danger/20 hover:from-danger/5'}`}>
-                  <h4 className="text-muted-olive text-xs font-bold uppercase tracking-wider mb-1">Lucro Líquido</h4>
-                  <p className={`text-3xl font-black ${netProfit >= 0 ? 'text-primary' : 'text-danger'}`}>
-                    R$ {netProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-[10px] text-muted-olive mt-2 italic font-medium">Período Selecionado</p>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="mb-12">
-              <h3 className="text-xl sm:text-2xl font-black mb-6 flex items-center gap-3">
-                <Car className="w-7 h-7 sm:w-8 sm:h-8 text-accent" />
-                Sua Frota
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {/* Card Resumo Frota */}
-                <div className={`glass rounded-3xl p-6 sm:p-8 flex flex-col justify-between bg-gradient-to-br transition-all relative overflow-hidden group border-none shadow-xl self-start ${
-                  theme === 'dark' ? 'from-primary to-accent/40' : 'from-primary to-accent/20'
-                }`}>
-                  <div className="absolute top-0 right-0 p-12 sm:p-16 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-all"></div>
-                  <div className="relative z-10">
-                    <p className="text-white/70 text-[10px] font-bold uppercase tracking-wider mb-1">Total de Veículos</p>
-                    <h4 className="text-4xl sm:text-5xl font-black text-white">{cars.length}</h4>
-                  </div>
-                  <div className="mt-8 space-y-4 relative z-10">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-white/80 flex items-center gap-2 font-medium"><span className="w-2 h-2 rounded-full bg-accent"></span> Disponíveis</span>
-                      <span className="font-black text-white">{availableCars}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-white/80 flex items-center gap-2 font-medium"><span className="w-2 h-2 rounded-full bg-white/50"></span> Alugados</span>
-                      <span className="font-black text-white">{rentedCars}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-white/80 flex items-center gap-2 font-medium"><span className="w-2 h-2 rounded-full bg-danger"></span> Manutenção</span>
-                      <span className="font-black text-white">{maintenanceCars}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Grid de Carros */}
-                <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {cars.map(car => (
-                    <Link 
-                      to={`/car/${car.license_plate}`} 
-                      key={car.id} 
-                      className="glass rounded-3xl p-6 block hover:border-accent/50 hover:shadow-2xl hover:shadow-accent/5 transition-all cursor-pointer group relative overflow-hidden"
-                    >
-                      <div className="flex justify-between items-start mb-6">
-                        <div className="bg-primary/10 p-3 rounded-2xl group-hover:bg-accent/20 transition-colors">
-                          <Car className="w-6 h-6 text-accent" />
-                        </div>
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${
-                          car.status === 'Disponível' ? 'bg-accent/20 text-white border border-accent/20' :
-                          car.status === 'Alugado' ? 'bg-primary/20 text-white border border-primary/20' :
-                          'bg-danger/20 text-white border border-danger/20'
-                        }`}>
-                          {car.status}
-                        </span>
-                      </div>
-                      
-                      <div className="mb-6">
-                        <h4 className="text-xl font-bold group-hover:text-accent transition-colors">{car.brand} {car.model}</h4>
-                        <p className="text-muted-olive text-sm font-medium mt-1">{car.year} • {car.color}</p>
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-2 pt-6 border-t border-border-color">
-                        <div>
-                          <p className="text-[10px] text-muted-olive uppercase tracking-widest mb-1 font-bold">Placa</p>
-                          <p className="text-sm font-bold truncate">{car.license_plate?.toUpperCase() || '-'}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-muted-olive uppercase tracking-widest mb-1 font-bold">Aluguéis</p>
-                          <p className="text-sm font-bold">{car.rentals?.length || 0}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-muted-olive uppercase tracking-widest mb-1 font-bold">KM</p>
-                          <p className="text-sm font-bold truncate">{car.current_km ? `${car.current_km.toLocaleString()}` : '-'}</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-olive flex items-center gap-1.5">
-                          <ClockCounterClockwise className="w-3.5 h-3.5" />
-                          Ver Detalhes
-                        </span>
-                        <div className="w-8 h-8 rounded-full bg-primary-dark flex items-center justify-center group-hover:bg-accent transition-colors">
-                          <Plus className="w-4 h-4 text-white group-hover:rotate-45 transition-transform" />
-                        </div>
-                      </div>
+                {/* Fleet Summary - Extra Clean */}
+                <div className="bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] p-6 sm:p-10 border border-border-color/50">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-2xl font-black tracking-tight">Frota</h3>
+                    <Link to="/cars" className="bg-primary/10 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all flex items-center gap-2">
+                      Ver Mais <ArrowUpRight weight="bold" className="w-3 h-3" />
                     </Link>
-                  ))}
+                  </div>
+                  <div className="grid grid-cols-3 gap-8">
+                    <div className="text-center sm:text-left">
+                      <p className="text-[9px] font-black text-muted-olive uppercase tracking-[0.2em] mb-2">Disponíveis</p>
+                      <p className="text-3xl font-black text-accent">{fleetStats.available}</p>
+                    </div>
+                    <div className="text-center sm:text-left">
+                      <p className="text-[9px] font-black text-muted-olive uppercase tracking-[0.2em] mb-2">Alugados</p>
+                      <p className="text-3xl font-black text-primary">{fleetStats.rented}</p>
+                    </div>
+                    <div className="text-center sm:text-left">
+                      <p className="text-[9px] font-black text-muted-olive uppercase tracking-[0.2em] mb-2">Manutenção</p>
+                      <p className="text-3xl font-black text-danger">{fleetStats.maintenance}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Operations Column */}
+              <div className="space-y-8">
+                {/* Alerts Section - Minimalist */}
+                <div className="bg-white/20 dark:bg-slate-900/20 rounded-[2rem] p-6 border border-border-color/30">
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-6 text-orange-500">Alertas</h3>
+                  <div className="space-y-3">
+                    {alerts.length === 0 ? (
+                      <p className="text-[10px] font-bold text-muted-olive/50 text-center py-6 italic">Nenhuma pendência hoje.</p>
+                    ) : (
+                      alerts.map((alert, idx) => (
+                        <div key={idx} className="group p-4 rounded-2xl hover:bg-white/50 dark:hover:bg-white/5 transition-all cursor-pointer">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-olive/60 mb-1">{alert.title}</p>
+                          <p className="text-xs font-bold group-hover:text-primary transition-colors">{alert.desc}</p>
+                          <Link to={`/car/${alert.carPlate}`} className="text-[9px] font-black text-primary/0 group-hover:text-primary transition-all mt-2 block">GERENCIAR →</Link>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Recent Activity - Extra Clean */}
+                <div className="bg-white/20 dark:bg-slate-900/20 rounded-[2rem] p-6 border border-border-color/30">
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-6">Atividade</h3>
+                  <div className="space-y-6">
+                    {recentActivity.length === 0 ? (
+                      <p className="text-[10px] font-bold text-muted-olive/50 text-center py-6 italic">Sem atividades recentes.</p>
+                    ) : (
+                      recentActivity.map((act, idx) => (
+                        <div key={idx} className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-1.5 h-1.5 rounded-full ${act.activityType === 'income' ? 'bg-success shadow-[0_0_8px_rgba(var(--success),0.5)]' : 'bg-primary'}`}></div>
+                            <div>
+                              <p className="text-xs font-black truncate max-w-[100px] text-main">{act.rentals?.client_name || act.expense_type}</p>
+                              <p className="text-[9px] text-muted-olive font-bold uppercase">{format(new Date(act.payment_date || act.expense_date), 'dd MMM', { locale: ptBR })}</p>
+                            </div>
+                          </div>
+                          <span className={`text-xs font-black ${act.activityType === 'income' ? 'text-success' : 'text-main'}`}>
+                            {act.activityType === 'income' ? '+' : '-'} R$ {act.amount}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </>
         )}
-
-      </main>
     </div>
   )
 }

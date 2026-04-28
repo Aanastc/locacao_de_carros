@@ -5,8 +5,10 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { 
   ArrowLeft, User, Envelope, Camera, CircleNotch, FloppyDisk, 
-  CheckCircle, WarningCircle, Lock, Sun, Moon 
+  CheckCircle, WarningCircle, Lock
 } from '@phosphor-icons/react'
+
+
 
 export default function Profile() {
   const { user } = useAuth()
@@ -154,27 +156,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen pb-12 transition-colors duration-300">
-      <header className="glass sticky top-0 z-40 border-b border-slate-800/50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <Link to="/dashboard" className="p-2 hover:bg-slate-800/50 rounded-full transition-colors text-slate-400 hover:text-white">
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <h1 className="font-bold text-xl">Meu Perfil</h1>
-            </div>
-            <button 
-              onClick={toggleTheme}
-              className="p-2 rounded-xl hover:bg-primary/10 transition-colors text-slate-400 hover:text-accent"
-            >
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12">
         <div className="glass rounded-3xl p-8 sm:p-12 border border-border-color shadow-2xl relative overflow-hidden">
           
           <div className="absolute top-0 right-0 p-32 bg-accent/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -284,7 +266,6 @@ export default function Profile() {
             </form>
           </div>
         </div>
-      </main>
     </div>
   )
 }
