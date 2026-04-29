@@ -404,10 +404,18 @@ export default function CarDetails() {
             
             {/* Card Info do Carro */}
             <div className="glass rounded-2xl p-6 border border-border-color shadow-sm">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Car className="w-5 h-5 text-accent" />
-                Detalhes do Veículo
-              </h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Car className="w-5 h-5 text-accent" />
+                  Detalhes do Veículo
+                </h3>
+                <button 
+                  onClick={() => setIsEditCarModalOpen(true)}
+                  className="p-1.5 px-2.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest"
+                >
+                  <PencilSimple className="w-3 h-3" /> Editar
+                </button>
+              </div>
               
               <div className="space-y-4">
                 <div className="flex justify-between items-center pb-3 border-b border-border-color">

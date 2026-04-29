@@ -50,7 +50,7 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path
 
   return (
-    <nav className="glass fixed top-0 left-0 w-full z-[100] border-b border-border-color">
+    <nav className="glass fixed top-0 left-0 w-full z-40 border-b border-border-color">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo & Desktop Nav */}
