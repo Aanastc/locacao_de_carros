@@ -14,8 +14,29 @@ export default function ExpenseModal({ car, onClose, onSuccess }) {
     custom_type: '',
     amount: '',
     expense_date: new Date().toISOString().split('T')[0],
-    description: ''
+    description: '',
+    oil_change_km: ''
   })
+
+  const [categories, setCategories] = useState(['Troca de óleo', 'Manutenção', 'Seguro', 'Alinhamento', 'Multas'])
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('expense_type')
+        .eq('user_id', user.id)
+      
+      if (!error && data) {
+        const unique = [...new Set(data.map(item => item.expense_type))]
+        setCategories(prev => {
+          const combined = [...new Set([...prev, ...unique])]
+          return combined.sort()
+        })
+      }
+    }
+    fetchCategories()
+  }, [user.id])
 
   useEffect(() => {
     const saved = localStorage.getItem(`expenseDraft_${car.id}`)
@@ -72,6 +93,22 @@ export default function ExpenseModal({ car, onClose, onSuccess }) {
       }])
 
       if (expError) throw expError
+
+      // Se for troca de óleo e informou nova KM, atualizar o carro e logar
+      if (formData.expense_type === 'Troca de óleo' && formData.oil_change_km) {
+        const newKm = parseInt(formData.oil_change_km)
+        if (!isNaN(newKm)) {
+          await supabase.from('cars').update({ current_km: newKm }).eq('id', car.id)
+          await supabase.from('km_logs').insert([{
+            car_id: car.id,
+            user_id: user.id,
+            km: newKm,
+            date: new Date().toISOString(),
+            notes: 'Registro via Troca de Óleo'
+          }])
+        }
+      }
+
       localStorage.removeItem(`expenseDraft_${car.id}`)
       onSuccess()
       onClose()
@@ -101,14 +138,27 @@ export default function ExpenseModal({ car, onClose, onSuccess }) {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipo de Despesa *</label>
               <select name="expense_type" value={formData.expense_type} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer dark:[color-scheme:dark]">
-                <option value="Troca de óleo">Troca de óleo</option>
-                <option value="Manutenção">Manutenção</option>
-                <option value="Seguro">Seguro</option>
-                <option value="Alinhamento">Alinhamento</option>
-                <option value="Multas">Multas</option>
-                <option value="Outros">Outros (Digitar)</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+                <option value="Outros">Outros (Digitar Novo...)</option>
               </select>
             </div>
+
+            {formData.expense_type === 'Troca de óleo' && (
+              <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">KM Atual (Ref)</label>
+                  <div className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-500 font-bold">
+                    {car.current_km?.toLocaleString() || '0'}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nova KM *</label>
+                  <input required type="number" name="oil_change_km" value={formData.oil_change_km} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none font-bold" placeholder="KM da troca" />
+                </div>
+              </div>
+            )}
 
             {formData.expense_type === 'Outros' && (
               <div className="space-y-2">
