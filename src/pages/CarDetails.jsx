@@ -371,6 +371,22 @@ export default function CarDetails() {
   return (
     <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
+        {/* Cabeçalho da Página */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <Link to="/dashboard" className="inline-flex items-center gap-2 text-muted-olive hover:text-primary transition-colors mb-2 text-sm font-bold group">
+              <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" /> 
+              Voltar ao Dashboard
+            </Link>
+            <h1 className="text-3xl sm:text-4xl font-black text-main flex flex-wrap items-center gap-3">
+              {car.brand} {car.model}
+              <span className="px-3 py-1 rounded-xl bg-primary/10 text-primary text-sm sm:text-base font-black uppercase tracking-widest border border-primary/20">
+                {car.license_plate}
+              </span>
+            </h1>
+          </div>
+        </div>
+
         {/* Painel de Ações Rápidas */}
         <div className="flex flex-wrap items-center gap-4">
           {car.status === 'Disponível' ? (

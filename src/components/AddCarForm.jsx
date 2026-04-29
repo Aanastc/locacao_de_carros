@@ -207,19 +207,18 @@ export default function AddCarForm({ onComplete }) {
       if (dbError) throw dbError
       
       // Criar registro de KM inicial
-      if (newCarData && newCarData[0] && newCarData[0].current_km != null) {
+      const initialKm = payload.current_km
+      if (newCarData && newCarData[0] && initialKm !== null && initialKm !== undefined) {
         const { error: logError } = await supabase.from('km_logs').insert([{
           car_id: newCarData[0].id,
           user_id: user.id,
-          km: newCarData[0].current_km,
+          km: initialKm,
           date: new Date().toISOString(),
           notes: 'Cadastro Inicial'
         }])
         
         if (logError) {
-          console.error("Erro ao inserir km_log inicial (não bloqueante):", logError)
-          // Não lançamos o erro aqui para permitir que o cadastro do carro finalize 
-          // mesmo que o histórico inicial falhe por questões de RLS
+          console.error("Erro ao inserir km_log inicial:", logError)
         }
       }
 
