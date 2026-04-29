@@ -50,7 +50,7 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path
 
   return (
-    <nav className="glass fixed top-0 left-0 w-full z-[100] border-b border-slate-800/50">
+    <nav className="glass fixed top-0 left-0 w-full z-[100] border-b border-border-color">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo & Desktop Nav */}
@@ -79,41 +79,48 @@ export default function Navbar() {
 
           {/* User Actions & Mobile Toggle */}
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Theme Toggle */}
+            {/* Theme Toggle Premium */}
             <button 
               onClick={toggleTheme}
-              className="p-2 rounded-xl hover:bg-primary/10 transition-colors text-muted-olive hover:text-accent"
+              className="relative p-2.5 rounded-2xl bg-bg-main border border-border-color shadow-sm hover:scale-110 active:scale-95 transition-all group overflow-hidden"
               title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
             >
-              {theme === 'dark' ? <Sun weight="bold" className="w-6 h-6" /> : <Moon weight="bold" className="w-6 h-6" />}
+              <div className="relative z-10">
+                {theme === 'dark' ? (
+                  <Sun weight="fill" className="w-5 h-5 text-yellow-500 transition-transform group-hover:rotate-90 duration-500" />
+                ) : (
+                  <Moon weight="fill" className="w-5 h-5 text-base-brown transition-transform group-hover:-rotate-12 duration-500" />
+                )}
+              </div>
+              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </button>
 
             {/* Profile Link */}
             <Link 
               to="/profile" 
-              className={`flex items-center gap-2 text-sm transition-colors bg-primary/5 p-1 sm:py-1.5 sm:px-3 rounded-full border hover:border-accent/50 ${
-                isActive('/profile') ? 'border-accent/50 text-primary' : 'border-border-color text-muted-olive'
+              className={`flex items-center gap-2 text-sm transition-colors bg-white/40 dark:bg-slate-900/40 p-1 sm:py-1.5 sm:px-3 rounded-full border hover:border-primary/50 ${
+                isActive('/profile') ? 'border-primary/50 text-primary' : 'border-border-color text-muted-olive'
               }`}
             >
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/20">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border border-border-color">
                 {avatar ? (
                   <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <User weight="bold" className="w-4 h-4 text-muted-olive" />
                 )}
               </div>
-              <span className="hidden sm:inline font-bold">
-                Olá, <strong className="text-primary">{firstName}</strong>
+              <span className="hidden sm:inline font-black text-main">
+                Olá, <span className="text-primary">{firstName}</span>
               </span>
             </Link>
 
             {/* Logout Button (Desktop) */}
             <button 
               onClick={handleSignOut}
-              className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-danger hover:bg-danger/10 transition-all font-bold text-sm"
+              className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-danger hover:bg-danger/10 transition-all font-black text-sm uppercase tracking-wider"
               title="Sair do sistema"
             >
-              <SignOut weight="bold" className="w-6 h-6" />
+              <SignOut weight="bold" className="w-5 h-5" />
               <span>Sair</span>
             </button>
 
@@ -130,7 +137,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden glass border-t border-slate-800/50 animate-in slide-in-from-top duration-300">
+        <div className="md:hidden glass border-t border-border-color animate-in slide-in-from-top duration-300">
           <div className="px-4 pt-2 pb-6 space-y-2">
             {navLinks.map((link) => (
               <Link
@@ -150,7 +157,7 @@ export default function Navbar() {
             <div className="pt-4 border-t border-border-color">
               <button 
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-danger hover:bg-danger/10 transition-all font-bold text-base"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-danger hover:bg-danger/10 transition-all font-black text-base"
               >
                 <SignOut weight="bold" className="w-6 h-6" />
                 Sair da Conta

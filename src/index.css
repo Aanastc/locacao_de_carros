@@ -2,44 +2,86 @@
 
 @theme {
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
   --color-accent: var(--accent);
   --color-success: var(--success);
+  --color-success-hover: var(--success-hover);
   --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-base: var(--base-brown);
   --color-muted-olive: var(--text-muted);
 }
 
 @layer base {
   :root {
-    /* MODO CLARO - Personalized Palette */
-    --bg-main: #f5f8f2; /* Suave baseado no #d3e4c5 */
-    --bg-card: #ffffff;
-    --text-main: #3d0e17; /* Escuro baseado no #8d2036 */
-    --text-muted: #8d2036; /* #color3 */
-    --border-color: #dbc9cc; /* #color1 */
+    /* MODO CLARO - Structured UI Palette */
+    --bg-main: #F7F3EF;
+    --bg-card: #FFFFFF;
+    --text-main: #2E2A28;
+    --text-muted: #6E625C;
+    --border-color: #E6DAD1;
+    
+    /* Functional Colors */
+    --primary: #3FA796;        /* Verde (Sucesso/Entrada) */
+    --primary-hover: #2E8C7D;
+    --success: #3FA796;
+    --success-hover: #2E8C7D;
+    --success-soft: #E6F4F1;
+    
+    --danger: #E63946;         /* Vermelho (Despesa/Erro) */
+    --danger-hover: #C92F3A;
+    --danger-soft: #FDEBEC;
+    
+    --brand: #E8A0BF;          /* Rosa (Branding) */
+    --brand-hover: #D988AA;
+    --brand-soft: #F9E6EF;
+    
+    --base-brown: #8B6F5C;     /* Marrom (Estrutural) */
+    --base-brown-dark: #6F5747;
+    --base-brown-light: #C9B8A8;
+    
+    --secondary: #8B6F5C;
+    --secondary-hover: #6F5747;
+    --accent: #E8A0BF;
+
     --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(220, 201, 204, 0.5);
-    --primary: #ce0a31; /* #color4 */
-    --secondary: #b9d48b; /* #color2 */
-    --accent: #b9d48b; /* #color2 */
-    --success: #b9d48b; /* #color2 */
-    --danger: #ce0a31; /* #color4 */
+    --glass-border: rgba(230, 218, 209, 0.5);
   }
 
   .dark {
-    /* MODO ESCURO - SaaS Style */
-    --bg-main: #0B1120;
-    --bg-card: #111827;
-    --text-main: #E5E7EB;
-    --text-muted: #9CA3AF;
-    --border-color: #374151;
-    --glass-bg: rgba(17, 24, 39, 0.8);
-    --glass-border: rgba(55, 65, 81, 0.5);
-    --primary: #3B82F6;
-    --secondary: #14B8A6;
-    --accent: #22C55E;
-    --success: #22C55E; 
-    --danger: #EF4444;
+    /* MODO ESCURO - Structured UI Palette */
+    --bg-main: #1F1B1A;
+    --bg-card: #2A2523;
+    --text-main: #F2EAE5;
+    --text-muted: #B8ADA7;
+    --border-color: #3A3330;
+    
+    /* Functional Colors stay consistent, but soft bgs might need adjustment if used */
+    --primary: #3FA796;
+    --primary-hover: #2E8C7D;
+    --success: #3FA796;
+    --success-hover: #2E8C7D;
+    
+    --danger: #E63946;
+    --danger-hover: #C92F3A;
+    
+    --brand: #E8A0BF;
+    --brand-hover: #D988AA;
+    
+    --base-brown: #8B6F5C;
+    --base-brown-dark: #6F5747;
+    --base-brown-light: #C9B8A8;
+    
+    --secondary: #8B6F5C;
+    --secondary-hover: #C9B8A8;
+    --accent: #E8A0BF;
+
+    --glass-bg: rgba(42, 37, 35, 0.8);
+    --glass-border: rgba(58, 51, 48, 0.5);
   }
 
   body {
@@ -58,8 +100,8 @@
 }
 
 @utility glass-dark {
-  background-color: rgba(15, 4, 5, 0.9);
+  background-color: rgba(31, 27, 26, 0.9);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(247, 187, 117, 0.1);
+  border: 1px solid rgba(184, 173, 167, 0.1);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }

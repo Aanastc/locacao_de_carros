@@ -7,6 +7,8 @@ import VerifyEmail from './pages/VerifyEmail'
 import CarDetails from './pages/CarDetails'
 import Profile from './pages/Profile'
 import Home from './pages/Home'
+import { ThemeProvider } from './context/ThemeContext'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 // Componente para proteger rotas
 function PrivateRoute({ children }) {
@@ -70,8 +72,7 @@ function AppRoutes() {
   )
 }
 
-import { ThemeProvider } from './context/ThemeContext'
-import { ErrorBoundary } from './components/ErrorBoundary'
+
 
 function App() {
   return (

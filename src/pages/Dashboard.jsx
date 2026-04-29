@@ -431,7 +431,6 @@ export default function Dashboard() {
     })
 
     XLSX.writeFile(wb, `PLANO_ANUAL_${selectedYear}.xlsx`)
-    setIsExportDropdownOpen(false)
   }
 
   const handleSignOut = async () => {
@@ -480,16 +479,28 @@ export default function Dashboard() {
             <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2">Visão Geral</p>
-                <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-main">
-                  Olá, {userName.split(' ')[0]}
-                </h1>
+                <div className="flex items-center gap-4">
+                  <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-main">
+                    Olá, {userName.split(' ')[0]}
+                  </h1>
+                  <button 
+                    onClick={toggleTheme}
+                    className="p-3 rounded-2xl bg-white/40 dark:bg-slate-800/40 border border-border-color/50 hover:scale-110 transition-all active:scale-95 shadow-xl shadow-black/5"
+                  >
+                    {theme === 'dark' ? (
+                      <Sun weight="fill" className="w-5 h-5 text-yellow-400" />
+                    ) : (
+                      <Moon weight="fill" className="w-5 h-5 text-indigo-600" />
+                    )}
+                  </button>
+                </div>
                 <p className="text-muted-olive mt-2 font-medium opacity-70">Sua frota está operando com {fleetStats.utilization.toFixed(0)}% de capacidade hoje.</p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <button onClick={handleExportAnnual} className="px-4 py-2 text-xs font-bold hover:bg-primary/5 rounded-xl transition-all flex items-center gap-2 border border-border-color">
                   <DownloadSimple weight="bold" className="w-4 h-4" /> Exportar
                 </button>
-                <button onClick={() => navigate('/cars?status=Disponível')} className="px-4 py-2 text-xs font-bold bg-accent/10 text-accent hover:bg-accent/20 rounded-xl transition-all flex items-center gap-2 border border-accent/20">
+                <button onClick={() => navigate('/cars?status=Disponível')} className="px-4 py-2 text-xs font-bold bg-brand/10 text-brand hover:bg-brand/20 rounded-xl transition-all flex items-center gap-2 border border-brand/20">
                   <FileText weight="bold" className="w-4 h-4" /> Lançar Aluguel
                 </button>
                 <button onClick={() => setShowAddForm(true)} className="bg-primary text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:translate-y-[-2px] transition-all flex items-center gap-2">
@@ -535,7 +546,7 @@ export default function Dashboard() {
                 <div className="bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] p-6 sm:p-10 border border-border-color/50">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
                     <div>
-                      <h3 className="text-2xl font-black tracking-tight mb-1">Fluxo Financeiro</h3>
+                      <h3 className="text-2xl font-black tracking-tight mb-1 text-main">Fluxo Financeiro</h3>
                       <p className="text-xs text-muted-olive font-medium">Comparativo entre receitas e despesas operacionais.</p>
                     </div>
                     <div className="flex bg-primary/5 rounded-2xl p-1 border border-border-color/50">
@@ -552,10 +563,10 @@ export default function Dashboard() {
                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: '700', fill: 'var(--text-muted)' }} />
                         <Tooltip 
                           cursor={{ fill: 'var(--primary)', opacity: 0.03 }}
-                          contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '16px' }} 
+                          contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '16px', background: 'var(--bg-card)', color: 'var(--text-main)' }} 
                         />
                         <Bar dataKey="Receitas" fill="var(--success)" radius={[6, 6, 0, 0]} barSize={filterPeriod === 'month' ? 8 : 32} />
-                        <Bar dataKey="Despesas" fill="var(--primary)" radius={[6, 6, 0, 0]} barSize={filterPeriod === 'month' ? 8 : 32} />
+                        <Bar dataKey="Despesas" fill="var(--danger)" radius={[6, 6, 0, 0]} barSize={filterPeriod === 'month' ? 8 : 32} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -564,7 +575,7 @@ export default function Dashboard() {
                 {/* Fleet Summary - Extra Clean */}
                 <div className="bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] p-6 sm:p-10 border border-border-color/50">
                   <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-2xl font-black tracking-tight">Frota</h3>
+                    <h3 className="text-2xl font-black tracking-tight text-main">Frota</h3>
                     <Link to="/cars" className="bg-primary/10 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all flex items-center gap-2">
                       Ver Mais <ArrowUpRight weight="bold" className="w-3 h-3" />
                     </Link>
@@ -572,7 +583,7 @@ export default function Dashboard() {
                   <div className="grid grid-cols-3 gap-8">
                     <div className="text-center sm:text-left">
                       <p className="text-[9px] font-black text-muted-olive uppercase tracking-[0.2em] mb-2">Disponíveis</p>
-                      <p className="text-3xl font-black text-accent">{fleetStats.available}</p>
+                      <p className="text-3xl font-black text-brand">{fleetStats.available}</p>
                     </div>
                     <div className="text-center sm:text-left">
                       <p className="text-[9px] font-black text-muted-olive uppercase tracking-[0.2em] mb-2">Alugados</p>
@@ -590,7 +601,7 @@ export default function Dashboard() {
               <div className="space-y-8">
                 {/* Alerts Section - Minimalist */}
                 <div className="bg-white/20 dark:bg-slate-900/20 rounded-[2rem] p-6 border border-border-color/30">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-6 text-orange-500">Alertas</h3>
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-6 text-danger">Alertas</h3>
                   <div className="space-y-3">
                     {alerts.length === 0 ? (
                       <p className="text-[10px] font-bold text-muted-olive/50 text-center py-6 italic">Nenhuma pendência hoje.</p>
@@ -598,7 +609,7 @@ export default function Dashboard() {
                       alerts.map((alert, idx) => (
                         <div key={idx} className="group p-4 rounded-2xl hover:bg-white/50 dark:hover:bg-white/5 transition-all cursor-pointer">
                           <p className="text-[9px] font-black uppercase tracking-widest text-muted-olive/60 mb-1">{alert.title}</p>
-                          <p className="text-xs font-bold group-hover:text-primary transition-colors">{alert.desc}</p>
+                          <p className="text-xs font-bold group-hover:text-primary transition-colors text-main">{alert.desc}</p>
                           <Link to={`/car/${alert.carPlate}`} className="text-[9px] font-black text-primary/0 group-hover:text-primary transition-all mt-2 block">GERENCIAR →</Link>
                         </div>
                       ))
@@ -608,7 +619,7 @@ export default function Dashboard() {
 
                 {/* Recent Activity - Extra Clean */}
                 <div className="bg-white/20 dark:bg-slate-900/20 rounded-[2rem] p-6 border border-border-color/30">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-6">Atividade</h3>
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-6 text-main">Atividade</h3>
                   <div className="space-y-6">
                     {recentActivity.length === 0 ? (
                       <p className="text-[10px] font-bold text-muted-olive/50 text-center py-6 italic">Sem atividades recentes.</p>
@@ -616,13 +627,13 @@ export default function Dashboard() {
                       recentActivity.map((act, idx) => (
                         <div key={idx} className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className={`w-1.5 h-1.5 rounded-full ${act.activityType === 'income' ? 'bg-success shadow-[0_0_8px_rgba(var(--success),0.5)]' : 'bg-primary'}`}></div>
+                            <div className={`w-1.5 h-1.5 rounded-full ${act.activityType === 'income' ? 'bg-success shadow-[0_0_8px_rgba(var(--success),0.5)]' : 'bg-danger'}`}></div>
                             <div>
                               <p className="text-xs font-black truncate max-w-[100px] text-main">{act.rentals?.client_name || act.expense_type}</p>
                               <p className="text-[9px] text-muted-olive font-bold uppercase">{format(new Date(act.payment_date || act.expense_date), 'dd MMM', { locale: ptBR })}</p>
                             </div>
                           </div>
-                          <span className={`text-xs font-black ${act.activityType === 'income' ? 'text-success' : 'text-main'}`}>
+                          <span className={`text-xs font-black ${act.activityType === 'income' ? 'text-success' : 'text-danger'}`}>
                             {act.activityType === 'income' ? '+' : '-'} R$ {act.amount}
                           </span>
                         </div>
