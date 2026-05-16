@@ -428,13 +428,13 @@ export default function CarDetails() {
 
         {/* Painel de Ações Rápidas */}
         <div className="flex flex-wrap items-center gap-4 bg-primary/5 p-4 rounded-2xl border border-primary/10">
-          {car.status === 'Disponível' ? (
+          {activeRental ? (
+            <button onClick={() => setIsFinishModalOpen(true)} className="bg-primary hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-primary/20">
+              <CheckCircle className="w-5 h-5" /> Encerrar Aluguel
+            </button>
+          ) : car.status !== 'Manutenção' ? (
             <button onClick={() => setIsRentModalOpen(true)} className="bg-accent hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-black transition-all flex items-center gap-2 shadow-lg shadow-accent/20 border border-accent/30">
               <PlayCircle className="w-5 h-5" /> Iniciar Aluguel
-            </button>
-          ) : car.status === 'Alugado' ? (
-            <button onClick={() => setIsFinishModalOpen(true)} className="bg-primary hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-primary/20">
-              <CheckCircle className="w-5 h-5" /> Finalizar Aluguel
             </button>
           ) : null}
           

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { X, CircleNotch } from '@phosphor-icons/react'
+import { X, CircleNotch, WarningCircle } from '@phosphor-icons/react'
 
 export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false)
@@ -72,12 +72,14 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
     }
   }
 
+  const isEarlyReturn = rental.expected_end_date && formData.actual_end_date < rental.expected_end_date.split('T')[0]
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         
         <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
-          <h2 className="text-xl font-black text-slate-900 dark:text-white">Finalizar Aluguel</h2>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white">Encerrar Aluguel</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-main transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -111,6 +113,18 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
               <label className="text-xs font-black uppercase tracking-widest text-slate-400">Km Final do Veículo</label>
               <input required type="number" name="final_km" value={formData.final_km} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none font-medium" />
             </div>
+
+            {isEarlyReturn && (
+              <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
+                <WarningCircle className="w-6 h-6 text-orange-500 shrink-0 mt-0.5" weight="fill" />
+                <div>
+                  <p className="text-xs font-black text-orange-600 dark:text-orange-400 uppercase tracking-wider mb-1">Devolução Antecipada</p>
+                  <p className="text-xs text-orange-700 dark:text-orange-300 leading-relaxed">
+                    O caução de <span className="font-bold">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(rental.security_deposit || 0)}</span> ficou retido pela seguradora conforme cláusula contratual de quebra de período.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-slate-400">Status do Pagamento</label>
