@@ -47,6 +47,7 @@ export default function CarDetails() {
   const [isEditRentModalOpen, setIsEditRentModalOpen] = useState(false)
   const [isAddKmModalOpen, setIsAddKmModalOpen] = useState(false)
   const [editingIncome, setEditingIncome] = useState(null)
+  const [editingExpense, setEditingExpense] = useState(null)
   const [initialIncomeData, setInitialIncomeData] = useState(null)
   const [activeFinanceTab, setActiveFinanceTab] = useState('gastos') // gastos, receitas
 
@@ -448,7 +449,10 @@ export default function CarDetails() {
           >
             <DownloadSimple className="w-5 h-5" />
             Baixar Planilha
-          </bu        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Coluna Esquerda: Dados Técnicos */}
           <div className="lg:col-span-1 space-y-8">
@@ -640,6 +644,7 @@ export default function CarDetails() {
                           <th className="py-3 px-6">Categoria</th>
                           <th className="py-3 px-6">Valor</th>
                           <th className="py-3 px-6">Nota</th>
+                          <th className="py-3 px-6">Ação</th>
                         </tr>
                       </thead>
                       <tbody className="text-sm">
@@ -654,6 +659,15 @@ export default function CarDetails() {
                               </td>
                               <td className="py-4 px-6 font-bold text-danger">R$ {Number(exp.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                               <td className="py-4 px-6 text-xs text-muted-olive max-w-[150px] truncate">{exp.description || '-'}</td>
+                              <td className="py-4 px-6 text-right">
+                                <button 
+                                  onClick={() => setEditingExpense(exp)} 
+                                  className="p-2 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors shadow-sm border border-accent/10"
+                                  title="Editar Despesa"
+                                >
+                                  <PencilSimple className="w-4 h-4" />
+                                </button>
+                              </td>
                             </tr>
                           ))
                         )}
@@ -737,7 +751,59 @@ export default function CarDetails() {
             </div>
 
           </div>
-        </div>             </table>
+        </div>
+
+        {/* Tabela de Despesas Detalhada */}
+        <div className="glass rounded-2xl p-6 border border-border-color shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <h3 className="text-xl font-black flex items-center gap-2 text-main">
+              <Wrench className="w-6 h-6 text-danger" />
+              Histórico Completo de Gastos
+            </h3>
+            <div className="bg-danger/10 px-4 py-2 rounded-xl border border-danger/20">
+              <span className="text-[10px] font-black uppercase tracking-widest text-danger block mb-0.5">Soma de Lançamentos</span>
+              <span className="text-lg font-black text-danger">R$ {expenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+          
+          {expenses.length === 0 ? (
+            <p className="text-sm text-muted-olive py-12 text-center italic font-medium">Este veículo ainda não possui despesas registradas.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border-color text-[10px] uppercase font-black tracking-widest text-muted-olive">
+                    <th className="pb-3 px-4">Data</th>
+                    <th className="pb-3 px-4">Categoria</th>
+                    <th className="pb-3 px-4">Valor</th>
+                    <th className="pb-3 px-4">Nota</th>
+                    <th className="pb-3 px-4 text-right">Ação</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                  {expenses.map(exp => (
+                    <tr key={exp.id} className="border-b border-border-color last:border-0 hover:bg-danger/5 transition-colors">
+                      <td className="py-4 px-4 font-bold text-main">{new Date(exp.expense_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+                      <td className="py-4 px-4">
+                        <span className="px-2.5 py-1 rounded-lg bg-danger/10 text-danger text-[10px] font-black uppercase tracking-wider border border-danger/10">
+                          {exp.expense_type}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 font-black text-danger text-base">R$ {Number(exp.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td className="py-4 px-4 text-muted-olive text-xs leading-relaxed max-w-xs truncate hover:whitespace-normal transition-all">{exp.description || '-'}</td>
+                      <td className="py-4 px-4 text-right">
+                        <button 
+                          onClick={() => setEditingExpense(exp)} 
+                          className="p-2 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors shadow-sm border border-accent/10"
+                          title="Editar Despesa"
+                        >
+                          <PencilSimple className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -760,10 +826,14 @@ export default function CarDetails() {
         />
       )}
 
-      {isExpenseModalOpen && (
+      {(isExpenseModalOpen || editingExpense) && (
         <ExpenseModal 
           car={car} 
-          onClose={() => setIsExpenseModalOpen(false)} 
+          expense={editingExpense}
+          onClose={() => {
+            setIsExpenseModalOpen(false)
+            setEditingExpense(null)
+          }} 
           onSuccess={fetchData} 
         />
       )}

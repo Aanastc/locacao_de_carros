@@ -23,6 +23,7 @@ export default function Reports() {
   const [filterPeriod, setFilterPeriod] = useState('month')
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [selectedCarId, setSelectedCarId] = useState('all')
   const [availableYears, setAvailableYears] = useState([])
 
   useEffect(() => {
@@ -63,7 +64,7 @@ export default function Reports() {
       }
 
       const [incRes, expRes, rentRes, carsRes] = await Promise.all([
-        supabase.from('incomes').select('*').eq('user_id', user.id).gte('payment_date', startDate).lte('payment_date', endDate),
+        supabase.from('incomes').select('*, rentals(car_id)').eq('user_id', user.id).gte('payment_date', startDate).lte('payment_date', endDate),
         supabase.from('expenses').select('*, cars(brand, model)').eq('user_id', user.id).gte('expense_date', startDate).lte('expense_date', endDate),
         supabase.from('rentals').select('*, cars(brand, model)').eq('user_id', user.id).gte('start_date', startDate).lte('start_date', endDate),
         supabase.from('cars').select('*').eq('owner_id', user.id)
@@ -80,43 +81,60 @@ export default function Reports() {
     }
   }
 
+  const filteredData = useMemo(() => {
+    let fIncomes = incomes
+    let fExpenses = expenses
+    let fRentals = rentals
+
+    if (selectedCarId !== 'all') {
+      fIncomes = incomes.filter(inc => inc.rentals?.car_id === selectedCarId)
+      fExpenses = expenses.filter(exp => exp.car_id === selectedCarId)
+      fRentals = rentals.filter(rent => rent.car_id === selectedCarId)
+    }
+
+    return { incomes: fIncomes, expenses: fExpenses, rentals: fRentals }
+  }, [incomes, expenses, rentals, selectedCarId])
+
   const financialChartData = useMemo(() => {
+    const { incomes: fIncomes, expenses: fExpenses } = filteredData
     if (filterPeriod === 'month') {
       const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate()
       return Array.from({ length: daysInMonth }, (_, i) => {
         const day = i + 1
-        const dayIncomes = incomes.filter(inc => new Date(inc.payment_date).getDate() === day)
+        const dayIncomes = fIncomes.filter(inc => new Date(inc.payment_date).getDate() === day)
           .reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
-        const dayExpenses = expenses.filter(exp => new Date(exp.expense_date).getDate() === day)
+        const dayExpenses = fExpenses.filter(exp => new Date(exp.expense_date).getDate() === day)
           .reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
         return { name: day.toString().padStart(2, '0'), Receitas: dayIncomes, Despesas: dayExpenses }
       })
     } else {
       const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
       return months.map((m, i) => {
-        const monthIncomes = incomes.filter(inc => new Date(inc.payment_date).getMonth() === i)
+        const monthIncomes = fIncomes.filter(inc => new Date(inc.payment_date).getMonth() === i)
           .reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
-        const monthExpenses = expenses.filter(exp => new Date(exp.expense_date).getMonth() === i)
+        const monthExpenses = fExpenses.filter(exp => new Date(exp.expense_date).getMonth() === i)
           .reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
         return { name: m, Receitas: monthIncomes, Despesas: monthExpenses }
       })
     }
-  }, [incomes, expenses, filterPeriod, selectedMonth, selectedYear])
+  }, [filteredData, filterPeriod, selectedMonth, selectedYear])
 
   const expenseCategoryData = useMemo(() => {
+    const { expenses: fExpenses } = filteredData
     const categories = {}
-    expenses.forEach(exp => {
+    fExpenses.forEach(exp => {
       categories[exp.expense_type] = (categories[exp.expense_type] || 0) + parseFloat(exp.amount)
     })
     return Object.entries(categories).map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-  }, [expenses])
+  }, [filteredData])
 
   const rentalDurationData = useMemo(() => {
+    const { rentals: fRentals } = filteredData
     // Calculando média de dias por aluguel
-    if (rentals.length === 0) return []
+    if (fRentals.length === 0) return []
     
-    const durations = rentals.map(r => {
+    const durations = fRentals.map(r => {
       const start = new Date(r.start_date)
       const end = r.end_date ? new Date(r.end_date) : new Date()
       return Math.ceil((end - start) / (1000 * 60 * 60 * 24))
@@ -137,10 +155,10 @@ export default function Reports() {
     })
 
     return Object.entries(ranges).map(([name, value]) => ({ name, value }))
-  }, [rentals])
+  }, [filteredData])
 
-  const totalIncomes = incomes.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
-  const totalExpenses = expenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
+  const totalIncomes = filteredData.incomes.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
+  const totalExpenses = filteredData.expenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
   const profit = totalIncomes - totalExpenses
 
   const COLORS = ['#ce0a31', '#b9d48b', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899']
@@ -185,6 +203,17 @@ export default function Reports() {
               className="flex-1 sm:w-32 bg-white/5 border border-border-color text-sm font-bold rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer"
             >
               {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+
+            <select 
+              value={selectedCarId} 
+              onChange={(e) => setSelectedCarId(e.target.value)}
+              className="flex-1 sm:w-64 bg-white/5 border border-border-color text-sm font-bold rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer"
+            >
+              <option value="all">Todos os Veículos</option>
+              {cars.map(car => (
+                <option key={car.id} value={car.id}>{car.brand} {car.model} ({car.license_plate})</option>
+              ))}
             </select>
           </div>
         </div>
@@ -309,7 +338,7 @@ export default function Reports() {
               <div className="flex justify-between items-center p-4 bg-primary/5 rounded-2xl">
                 <div>
                   <p className="text-xs font-bold text-muted-olive uppercase tracking-wider">Ticket Médio (Receita)</p>
-                  <h4 className="text-xl font-black">R$ {rentals.length > 0 ? (totalIncomes / rentals.length).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : 0}</h4>
+                  <h4 className="text-xl font-black">R$ {filteredData.rentals.length > 0 ? (totalIncomes / filteredData.rentals.length).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : 0}</h4>
                 </div>
                 <div className="p-3 bg-white/10 rounded-xl"><CurrencyDollar className="w-6 h-6 text-primary" /></div>
               </div>
@@ -317,7 +346,7 @@ export default function Reports() {
               <div className="flex justify-between items-center p-4 bg-accent/5 rounded-2xl">
                 <div>
                   <p className="text-xs font-bold text-muted-olive uppercase tracking-wider">Total de Aluguéis</p>
-                  <h4 className="text-xl font-black">{rentals.length} contratos</h4>
+                  <h4 className="text-xl font-black">{filteredData.rentals.length} contratos</h4>
                 </div>
                 <div className="p-3 bg-white/10 rounded-xl"><Calendar className="w-6 h-6 text-accent" /></div>
               </div>
@@ -325,7 +354,7 @@ export default function Reports() {
               <div className="flex justify-between items-center p-4 bg-danger/5 rounded-2xl">
                 <div>
                   <p className="text-xs font-bold text-muted-olive uppercase tracking-wider">Custo Médio p/ Carro</p>
-                  <h4 className="text-xl font-black">R$ {cars.length > 0 ? (totalExpenses / cars.length).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : 0}</h4>
+                  <h4 className="text-xl font-black">R$ {(selectedCarId === 'all' ? (cars.length > 0 ? totalExpenses / cars.length : 0) : totalExpenses).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</h4>
                 </div>
                 <div className="p-3 bg-white/10 rounded-xl"><TrendDown className="w-6 h-6 text-danger" /></div>
               </div>

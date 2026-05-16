@@ -53,9 +53,9 @@ export default function Dashboard() {
 
   // Financial Panorama States
   const [financialStats, setFinancialStats] = useState({
-    monthExpenses: 0,
-    yearRevenue: 0,
-    yearProfit: 0
+    periodExpenses: 0,
+    periodRevenue: 0,
+    periodProfit: 0
   })
 
   const [selectedCarForRent, setSelectedCarForRent] = useState(null)
@@ -188,33 +188,14 @@ export default function Dashboard() {
         maintenance: maintenanceCount
       })
 
-      // 5. Calculate Financial Panorama (Month & Year)
-      const now = new Date()
-      const mStart = startOfMonth(now).toISOString()
-      const mEnd = endOfMonth(now).toISOString()
-      const yStart = startOfYear(now).toISOString()
-      const yEnd = endOfYear(now).toISOString()
-
-      // We need a wider fetch for year stats
-      const [yearExpRes, yearIncRes] = await Promise.all([
-        supabase.from('expenses').select('amount').eq('user_id', user.id).gte('expense_date', yStart).lte('expense_date', yEnd),
-        supabase.from('incomes').select('amount').eq('user_id', user.id).gte('payment_date', yStart).lte('payment_date', yEnd)
-      ])
-
-      const yearExpenses = (yearExpRes.data || []).reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
-      const yearRevenue = (yearIncRes.data || []).reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
-      
-      const monthExpenses = (expData || [])
-        .filter(e => {
-          const d = new Date(e.expense_date)
-          return d >= startOfMonth(now) && d <= endOfMonth(now)
-        })
-        .reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
+      // 5. Calculate Financial Panorama (Based on Selected Period)
+      const periodExpenses = (expData || []).reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
+      const periodRevenue = (incData || []).reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
 
       setFinancialStats({
-        monthExpenses,
-        yearRevenue,
-        yearProfit: yearRevenue - yearExpenses
+        periodExpenses,
+        periodRevenue,
+        periodProfit: periodRevenue - periodExpenses
       })
 
       // 6. Payment Alerts (Enhanced)
@@ -476,7 +457,7 @@ export default function Dashboard() {
         ) : (
           <>
             {/* Header com Boas-vindas */}
-            <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2">Visão Geral</p>
                 <div className="flex items-center gap-4">
@@ -496,14 +477,39 @@ export default function Dashboard() {
                 </div>
                 <p className="text-muted-olive mt-2 font-medium opacity-70">Sua frota está operando com {fleetStats.utilization.toFixed(0)}% de capacidade hoje.</p>
               </div>
+
+              {/* Filtros de Período Dinâmicos */}
+              <div className="flex flex-wrap items-center gap-3 bg-white/30 dark:bg-slate-900/30 p-2 rounded-[2rem] border border-border-color/50">
+                <div className="flex bg-primary/5 rounded-2xl p-1">
+                  <button onClick={() => setFilterPeriod('month')} className={`px-4 py-2 text-[10px] font-black rounded-xl transition-all ${filterPeriod === 'month' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>MENSAL</button>
+                  <button onClick={() => setFilterPeriod('year')} className={`px-4 py-2 text-[10px] font-black rounded-xl transition-all ${filterPeriod === 'year' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>ANUAL</button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {filterPeriod === 'month' && (
+                    <select 
+                      value={selectedMonth} 
+                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                      className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-main outline-none cursor-pointer py-1 pr-8"
+                    >
+                      {MONTHS.map((m, i) => <option key={m} value={i + 1} className="dark:bg-slate-900">{m}</option>)}
+                    </select>
+                  )}
+                  <select 
+                    value={selectedYear} 
+                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                    className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-main outline-none cursor-pointer py-1 pr-8"
+                  >
+                    {availableYears.map(y => <option key={y} value={y} className="dark:bg-slate-900">{y}</option>)}
+                  </select>
+                </div>
+              </div>
+
               <div className="flex flex-wrap items-center gap-3">
-                <button onClick={handleExportAnnual} className="px-4 py-2 text-xs font-bold hover:bg-primary/5 rounded-xl transition-all flex items-center gap-2 border border-border-color">
-                  <DownloadSimple weight="bold" className="w-4 h-4" /> Exportar
+                <button onClick={handleExportAnnual} className="p-3 bg-white/40 dark:bg-slate-800/40 rounded-2xl border border-border-color/50 hover:bg-primary/10 hover:text-primary transition-all active:scale-95 shadow-lg shadow-black/5" title="Exportar Excel">
+                  <DownloadSimple weight="bold" className="w-5 h-5" />
                 </button>
-                <button onClick={() => navigate('/cars?status=Disponível')} className="px-4 py-2 text-xs font-bold bg-brand/10 text-brand hover:bg-brand/20 rounded-xl transition-all flex items-center gap-2 border border-brand/20">
-                  <FileText weight="bold" className="w-4 h-4" /> Lançar Aluguel
-                </button>
-                <button onClick={() => setShowAddForm(true)} className="bg-primary text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:translate-y-[-2px] transition-all flex items-center gap-2">
+                <button onClick={() => setShowAddForm(true)} className="bg-primary text-white px-6 py-4 rounded-3xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:translate-y-[-2px] transition-all flex items-center gap-2">
                   <Plus weight="bold" className="w-4 h-4" /> Novo Veículo
                 </button>
               </div>
@@ -512,24 +518,24 @@ export default function Dashboard() {
             {/* Quick Stats - Minimalist */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
               <div className="relative group p-6 bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-border-color/50">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Gastos (Mês Atual)</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Gastos {filterPeriod === 'month' ? '(Mês)' : '(Ano)'}</p>
                 <h3 className="text-3xl font-black tracking-tighter text-danger">
                   <span className="text-sm font-bold mr-1">R$</span>
-                  {financialStats.monthExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {financialStats.periodExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </h3>
               </div>
               <div className="relative group p-6 bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-border-color/50">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Renda (Ano)</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Renda {filterPeriod === 'month' ? '(Mês)' : '(Ano)'}</p>
                 <h3 className="text-3xl font-black tracking-tighter text-success">
                   <span className="text-sm font-bold mr-1">R$</span>
-                  {financialStats.yearRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {financialStats.periodRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </h3>
               </div>
               <div className="relative group p-6 bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-border-color/50">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Lucro (Ano)</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Lucro {filterPeriod === 'month' ? '(Mês)' : '(Ano)'}</p>
                 <h3 className="text-3xl font-black tracking-tighter text-primary">
                   <span className="text-sm font-bold mr-1">R$</span>
-                  {financialStats.yearProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {financialStats.periodProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </h3>
               </div>
               <div className="relative group p-6 bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-border-color/50">
@@ -549,9 +555,9 @@ export default function Dashboard() {
                       <h3 className="text-2xl font-black tracking-tight mb-1 text-main">Fluxo Financeiro</h3>
                       <p className="text-xs text-muted-olive font-medium">Comparativo entre receitas e despesas operacionais.</p>
                     </div>
-                    <div className="flex bg-primary/5 rounded-2xl p-1 border border-border-color/50">
-                      <button onClick={() => setFilterPeriod('month')} className={`px-5 py-2 text-[10px] font-black rounded-xl transition-all ${filterPeriod === 'month' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>MENSAL</button>
-                      <button onClick={() => setFilterPeriod('year')} className={`px-5 py-2 text-[10px] font-black rounded-xl transition-all ${filterPeriod === 'year' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>ANUAL</button>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full bg-success`}></div>
+                      <p className="text-xs text-muted-olive font-medium">Dados atualizados para o período selecionado.</p>
                     </div>
                   </div>
                   

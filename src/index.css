@@ -90,6 +90,24 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     transition: background-color 0.4s ease, color 0.4s ease;
   }
+
+  select {
+    color-scheme: light;
+  }
+
+  .dark select {
+    color-scheme: dark;
+  }
+
+  select option {
+    background-color: var(--bg-card);
+    color: var(--text-main);
+  }
+
+  .dark select option {
+    background-color: #2A2523;
+    color: #F2EAE5;
+  }
 }
 
 @utility glass {
