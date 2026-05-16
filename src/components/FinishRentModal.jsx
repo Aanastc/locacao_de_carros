@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { X, CircleNotch, WarningCircle } from '@phosphor-icons/react'
+import { X, CircleNotch, WarningCircle, Camera, Plus, Trash } from '@phosphor-icons/react'
+import { useAuth } from '../context/AuthContext'
 
 export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isInitialized, setIsInitialized] = useState(false)
+  const [endInspectionFiles, setEndInspectionFiles] = useState([])
 
   const [formData, setFormData] = useState({
     actual_end_date: new Date().toISOString().split('T')[0],
     final_km: rental.initial_km || '',
-    payment_status: rental.payment_status
+    payment_status: rental.payment_status,
+    end_inspection_notes: ''
   })
 
   useEffect(() => {
@@ -31,6 +35,36 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
+  const handleInspectionFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files)
+    if (selectedFiles.length > 0) {
+      setEndInspectionFiles(prev => [...prev, ...selectedFiles])
+    }
+  }
+
+  const removeInspectionFile = (index) => {
+    setEndInspectionFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const uploadFile = async (file, path) => {
+    if (!file) return null
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Math.random()}.${fileExt}`
+    const filePath = `${user.id}/${path}/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('rentals')
+      .upload(filePath, file)
+
+    if (uploadError) throw uploadError
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('rentals')
+      .getPublicUrl(filePath)
+
+    return publicUrl
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -44,12 +78,20 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
     }
 
     try {
+      let endInspectionUrls = []
+      if (endInspectionFiles.length > 0) {
+        const uploadPromises = endInspectionFiles.map(f => uploadFile(f, 'inspections/end'))
+        endInspectionUrls = await Promise.all(uploadPromises)
+      }
+
       const { error: rentalError } = await supabase.from('rentals')
         .update({
           actual_end_date: formData.actual_end_date,
           final_km: finalKmNum,
           payment_status: formData.payment_status,
-          status: 'completed'
+          status: 'completed',
+          end_inspection_urls: endInspectionUrls,
+          end_inspection_notes: formData.end_inspection_notes || null
         })
         .eq('id', rental.id)
 
@@ -131,8 +173,48 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
               <select name="payment_status" value={formData.payment_status} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none appearance-none font-medium dark:[color-scheme:dark]">
                 <option value="Pendente">Pendente</option>
                 <option value="Pago">Pago</option>
-                <option value="Parcial">Pago (Parcial)</option>
               </select>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+              <div className="flex items-center gap-2 text-accent">
+                <Camera className="w-5 h-5" />
+                <h3 className="font-black uppercase text-xs tracking-widest">Vistoria Final</h3>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Fotos da Vistoria (Múltiplas)</label>
+                <input type="file" multiple accept="image/*" onChange={handleInspectionFileChange} className="hidden" id="end_inspection_files" />
+                <label htmlFor="end_inspection_files" className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group">
+                  <Plus className="w-6 h-6 text-slate-400 group-hover:text-accent mb-2" />
+                  <span className="text-[10px] font-bold text-slate-400 group-hover:text-accent">Clique para adicionar fotos</span>
+                </label>
+              </div>
+
+              {endInspectionFiles.length > 0 && (
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                  {endInspectionFiles.map((file, idx) => (
+                    <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                      <img src={URL.createObjectURL(file)} alt={`Vistoria ${idx}`} className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => removeInspectionFile(idx)} className="absolute top-1 right-1 bg-danger text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Trash className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observações da Vistoria Final</label>
+                <textarea 
+                  name="end_inspection_notes" 
+                  value={formData.end_inspection_notes} 
+                  onChange={handleChange} 
+                  rows="2" 
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none resize-none text-xs" 
+                  placeholder="Observações sobre o estado do veículo na devolução..."
+                />
+              </div>
             </div>
           </form>
         </div>

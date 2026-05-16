@@ -6,7 +6,8 @@ import {
   ArrowRight, ArrowLeft, CheckSquareOffset,
   Envelope, IdentificationCard, Phone, 
   Fingerprint, MapTrifold, Calendar,
-  Speedometer, CurrencyDollar
+  Speedometer, CurrencyDollar, Camera,
+  Plus, Trash
 } from '@phosphor-icons/react'
 import { useAuth } from '../context/AuthContext'
 
@@ -16,7 +17,8 @@ const STEPS = [
   { id: 3, name: 'Documentação', icon: Files },
   { id: 4, name: 'Referências', icon: Users },
   { id: 5, name: 'Contrato', icon: FileText },
-  { id: 6, name: 'Revisão', icon: CheckSquareOffset },
+  { id: 6, name: 'Vistoria', icon: Camera },
+  { id: 7, name: 'Revisão', icon: CheckSquareOffset },
 ]
 
 export default function RentCarModal({ car, onClose, onSuccess }) {
@@ -31,6 +33,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
     residence_file: null,
     sne_file: null
   })
+  const [startInspectionFiles, setStartInspectionFiles] = useState([])
 
   // Get current datetime in YYYY-MM-DDTHH:MM format for the input
   const now = new Date()
@@ -67,7 +70,8 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
     initial_km: car.current_km || '',
     total_price: '',
     security_deposit: '',
-    payment_status: 'Pendente'
+    payment_status: 'Pendente',
+    start_inspection_notes: ''
   })
 
   const [isInitialized, setIsInitialized] = useState(false)
@@ -243,6 +247,17 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
       setFiles(prev => ({ ...prev, [name]: selectedFiles[0] }))
     }
   }
+  
+  const handleInspectionFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files)
+    if (selectedFiles.length > 0) {
+      setStartInspectionFiles(prev => [...prev, ...selectedFiles])
+    }
+  }
+
+  const removeInspectionFile = (index) => {
+    setStartInspectionFiles(prev => prev.filter((_, i) => i !== index))
+  }
 
   const uploadFile = async (file, path) => {
     if (!file) return null
@@ -264,7 +279,9 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    if (e) e.preventDefault()
+    console.log('Submitting step:', step)
+    
     if (step < STEPS.length) {
       setStep(step + 1)
       return
@@ -274,6 +291,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
     setError('')
 
     try {
+      console.log('Starting final submission process...')
       // 1. Upload All Files
       let urls = {
         uber: null,
@@ -282,6 +300,8 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
         residence: null,
         sne: null
       }
+      
+      let startInspectionUrls = []
 
       try {
         if (files.uber_file) urls.uber = await uploadFile(files.uber_file, 'uber')
@@ -289,6 +309,12 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
         if (files.cnh_ear_file) urls.cnh_ear = await uploadFile(files.cnh_ear_file, 'cnh_ear')
         if (files.residence_file) urls.residence = await uploadFile(files.residence_file, 'residence')
         if (files.sne_file) urls.sne = await uploadFile(files.sne_file, 'sne')
+
+        // Inspection Photos
+        if (startInspectionFiles.length > 0) {
+          const uploadPromises = startInspectionFiles.map(f => uploadFile(f, 'inspections/start'))
+          startInspectionUrls = await Promise.all(uploadPromises)
+        }
       } catch (uploadErr) {
         console.error('File upload error:', uploadErr)
         throw new Error('Erro ao fazer upload de um ou mais documentos.')
@@ -333,7 +359,10 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
         personal_references: formData.personal_references,
         spouse_name: formData.spouse_name || null,
         spouse_phone: formData.spouse_phone || null,
-        spouse_cpf: formData.spouse_cpf || null
+        spouse_cpf: formData.spouse_cpf || null,
+
+        start_inspection_urls: startInspectionUrls,
+        start_inspection_notes: formData.start_inspection_notes || null
       }])
 
       if (rentalError) throw rentalError
@@ -395,7 +424,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
         <div className="p-6 overflow-y-auto flex-1">
           {error && <div className="bg-danger/10 text-danger border border-danger/20 p-3 rounded-xl mb-6 text-sm font-medium">{error}</div>}
 
-          <form id="rentForm" onSubmit={handleSubmit} className="space-y-6">
+          <form id="rentForm" onSubmit={handleSubmit} noValidate className="space-y-6">
             
             {/* ETAPA 1: Identificação */}
             {step === 1 && (
@@ -589,8 +618,55 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
               </div>
             )}
 
-            {/* ETAPA 6: Revisão */}
+            {/* ETAPA 6: Vistoria Inicial */}
             {step === 6 && (
+              <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+                <div className="flex items-center gap-2 text-accent">
+                  <Camera className="w-5 h-5" />
+                  <h3 className="font-black uppercase text-xs tracking-widest">Vistoria Inicial do Veículo</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Fotos da Vistoria (Múltiplas)</label>
+                    <input type="file" multiple accept="image/*" onChange={handleInspectionFileChange} className="hidden" id="start_inspection_files" />
+                    <label htmlFor="start_inspection_files" className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-border-color rounded-2xl cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group">
+                      <Plus className="w-8 h-8 text-muted-olive group-hover:text-accent mb-2" />
+                      <span className="text-xs font-bold text-muted-olive group-hover:text-accent">Clique para adicionar fotos</span>
+                      <span className="text-[10px] text-slate-400 mt-1">Você pode selecionar várias imagens de uma vez</span>
+                    </label>
+                  </div>
+
+                  {startInspectionFiles.length > 0 && (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-4">
+                      {startInspectionFiles.map((file, idx) => (
+                        <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-border-color">
+                          <img src={URL.createObjectURL(file)} alt={`Vistoria ${idx}`} className="w-full h-full object-cover" />
+                          <button type="button" onClick={() => removeInspectionFile(idx)} className="absolute top-1 right-1 bg-danger text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5 pt-4">
+                    <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Observações da Vistoria</label>
+                    <textarea 
+                      name="start_inspection_notes" 
+                      value={formData.start_inspection_notes} 
+                      onChange={handleChange} 
+                      rows="3" 
+                      className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none resize-none" 
+                      placeholder="Descreva avarias, nível de combustível, estado dos pneus, etc."
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ETAPA 7: Revisão */}
+            {step === 7 && (
               <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
                 <div className="flex items-center gap-2 text-accent">
                   <CheckSquareOffset className="w-5 h-5" />
@@ -742,39 +818,56 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
                     </div>
                   </div>
 
+                  {/* 6. Vistoria */}
+                  <div className="bg-accent/5 p-4 rounded-2xl border border-accent/20 space-y-3">
+                    <div className="flex items-center gap-2 text-accent">
+                      <Camera className="w-4 h-4" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">6. Vistoria Inicial</span>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-olive">Fotos anexadas: <span className="font-bold text-main">{startInspectionFiles.length}</span></p>
+                      {formData.start_inspection_notes && (
+                        <div>
+                          <p className="text-[10px] uppercase font-black text-muted-olive tracking-widest mb-1">Notas</p>
+                          <p className="text-xs text-main italic bg-white/50 dark:bg-slate-950/50 p-2 rounded-lg border border-border-color">{formData.start_inspection_notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                 </div>
               </div>
             )}
-          </form>
-        </div>
 
-        {/* Footer Navigation */}
-        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 flex justify-between gap-3 shadow-[0_-10px_20px_rgba(0,0,0,0.03)]">
-          <button 
-            type="button" 
-            onClick={step === 1 ? onClose : () => setStep(step - 1)} 
-            disabled={loading} 
-            className="flex items-center px-5 py-2.5 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white font-bold transition-colors"
-          >
-            {step === 1 ? 'Cancelar' : <><ArrowLeft className="w-4 h-4 mr-2" /> Voltar</>}
-          </button>
-          
-          <button 
-            type="submit" 
-            form="rentForm" 
-            disabled={loading} 
-            className={`px-8 py-2.5 rounded-xl font-black text-sm transition-all flex items-center shadow-lg ${
-              step === STEPS.length ? 'bg-accent hover:opacity-90 shadow-accent/20' : 'bg-primary hover:opacity-90 shadow-primary/20'
-            } text-white`}
-          >
-            {loading ? (
-              <><CircleNotch className="w-4 h-4 mr-2 animate-spin" /><span>Processando...</span></>
-            ) : step === STEPS.length ? (
-              <><CheckSquareOffset className="w-5 h-5 mr-2" /> <span>Finalizar Aluguel</span></>
-            ) : (
-              <><span>Próxima Etapa</span> <ArrowRight className="w-4 h-4 ml-2" /></>
-            )}
-          </button>
+            {/* Botoes de Navegação internos ao Form para garantir funcionamento do Submit */}
+            <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-800 flex justify-between gap-3">
+              <button 
+                type="button" 
+                onClick={step === 1 ? onClose : () => setStep(step - 1)} 
+                disabled={loading} 
+                className="flex items-center px-5 py-2.5 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white font-bold transition-colors"
+              >
+                {step === 1 ? 'Cancelar' : <><ArrowLeft className="w-4 h-4 mr-2" /> Voltar</>}
+              </button>
+              
+              <button 
+                type={step === STEPS.length ? "button" : "submit"} 
+                onClick={step === STEPS.length ? handleSubmit : undefined}
+                disabled={loading} 
+                className={`px-8 py-2.5 rounded-xl font-black text-sm transition-all flex items-center shadow-lg ${
+                  step === STEPS.length ? 'bg-accent hover:opacity-90 shadow-accent/20' : 'bg-primary hover:opacity-90 shadow-primary/20'
+                } text-white`}
+              >
+                {loading ? (
+                  <><CircleNotch className="w-4 h-4 mr-2 animate-spin" /><span>Processando...</span></>
+                ) : step === STEPS.length ? (
+                  <><CheckSquareOffset className="w-5 h-5 mr-2" /> <span>Confirmar e Iniciar Aluguel</span></>
+                ) : (
+                  <><span>Próxima Etapa</span> <ArrowRight className="w-4 h-4 ml-2" /></>
+                )}
+              </button>
+            </div>
+          </form>
         </div>
 
       </div>

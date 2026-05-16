@@ -20,7 +20,7 @@ import EditCarModal from '../components/EditCarModal'
 import EditRentModal from '../components/EditRentModal'
 import RentDetailsModal from '../components/RentDetailsModal'
 import AddKmModal from '../components/AddKmModal'
-import { PencilSimple } from '@phosphor-icons/react'
+import { PencilSimple, Camera } from '@phosphor-icons/react'
 
 export default function CarDetails() {
   const { plate } = useParams()
@@ -590,6 +590,29 @@ export default function CarDetails() {
                         ))}
                       </div>
                     </div>
+
+                    {/* Vistoria Inicial (Nova Seção) */}
+                    {activeRental.start_inspection_urls?.length > 0 && (
+                      <div className="pt-4 border-t border-accent/10 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] font-black uppercase text-accent tracking-widest flex items-center gap-2">
+                            <Camera className="w-4 h-4" /> Vistoria de Retirada
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {activeRental.start_inspection_urls.map((url, idx) => (
+                            <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-lg overflow-hidden border border-accent/20 hover:border-accent transition-colors shadow-sm">
+                              <img src={url} alt={`Vistoria ${idx}`} className="w-full h-full object-cover" />
+                            </a>
+                          ))}
+                        </div>
+                        {activeRental.start_inspection_notes && (
+                          <p className="text-[10px] text-muted-olive italic bg-white/30 dark:bg-slate-950/30 p-2 rounded-lg border border-border-color/50">
+                            "{activeRental.start_inspection_notes}"
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-4">

@@ -1,4 +1,4 @@
-import { X, User, Phone, IdentificationCard, Calendar, Car, CurrencyDollar, CheckCircle, FileText } from '@phosphor-icons/react'
+import { X, User, Phone, IdentificationCard, Calendar, Car, CurrencyDollar, CheckCircle, FileText, Camera } from '@phosphor-icons/react'
 
 export default function RentDetailsModal({ rental, onClose }) {
   if (!rental) return null
@@ -125,6 +125,57 @@ export default function RentDetailsModal({ rental, onClose }) {
               </div>
             </div>
           </div>
+
+          {/* Vistorias */}
+          {(rental.start_inspection_urls?.length > 0 || rental.end_inspection_urls?.length > 0) && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-black uppercase tracking-widest text-muted-olive flex items-center gap-2">
+                <Camera className="w-4 h-4" /> Vistorias (Inspeção)
+              </h3>
+              
+              <div className="grid grid-cols-1 gap-4">
+                {/* Vistoria Inicial */}
+                {rental.start_inspection_urls?.length > 0 && (
+                  <div className="bg-accent/5 p-4 rounded-2xl border border-accent/20">
+                    <p className="text-[10px] uppercase font-black tracking-widest text-accent mb-3">Vistoria Inicial (Retirada)</p>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">
+                      {rental.start_inspection_urls.map((url, idx) => (
+                        <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="aspect-square rounded-lg overflow-hidden border border-border-color hover:border-accent transition-colors">
+                          <img src={url} alt={`Vistoria Inicial ${idx}`} className="w-full h-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                    {rental.start_inspection_notes && (
+                      <div className="bg-white/50 dark:bg-slate-950/50 p-3 rounded-xl border border-border-color">
+                        <p className="text-[9px] uppercase font-black text-muted-olive mb-1">Notas da Vistoria</p>
+                        <p className="text-xs text-main italic">{rental.start_inspection_notes}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Vistoria Final */}
+                {rental.end_inspection_urls?.length > 0 && (
+                  <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20">
+                    <p className="text-[10px] uppercase font-black tracking-widest text-primary mb-3">Vistoria Final (Devolução)</p>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">
+                      {rental.end_inspection_urls.map((url, idx) => (
+                        <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="aspect-square rounded-lg overflow-hidden border border-border-color hover:border-primary transition-colors">
+                          <img src={url} alt={`Vistoria Final ${idx}`} className="w-full h-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                    {rental.end_inspection_notes && (
+                      <div className="bg-white/50 dark:bg-slate-950/50 p-3 rounded-xl border border-border-color">
+                        <p className="text-[9px] uppercase font-black text-muted-olive mb-1">Notas da Vistoria</p>
+                        <p className="text-xs text-main italic">{rental.end_inspection_notes}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
         </div>
 

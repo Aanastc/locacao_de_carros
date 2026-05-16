@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { 
   X, CircleNotch, Paperclip, CheckCircle, 
   User, MapPin, Files, Users, FileText, 
-  Phone, IdentificationCard, Envelope, MapTrifold
+  Phone, IdentificationCard, Envelope, MapTrifold, Camera
 } from '@phosphor-icons/react'
 import { useAuth } from '../context/AuthContext'
 
@@ -63,7 +63,9 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
     unit_price: '', 
     initial_km: rental.initial_km || '',
     total_price: formatInitialCurrency(rental.total_price),
-    security_deposit: formatInitialCurrency(rental.security_deposit)
+    security_deposit: formatInitialCurrency(rental.security_deposit),
+    start_inspection_notes: rental.start_inspection_notes || '',
+    end_inspection_notes: rental.end_inspection_notes || ''
   })
 
   const handleCEP = async (e) => {
@@ -252,7 +254,9 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
           personal_references: formData.personal_references,
           spouse_name: formData.spouse_name || null,
           spouse_phone: formData.spouse_phone || null,
-          spouse_cpf: formData.spouse_cpf || null
+          spouse_cpf: formData.spouse_cpf || null,
+          start_inspection_notes: formData.start_inspection_notes || null,
+          end_inspection_notes: formData.end_inspection_notes || null
         })
         .eq('id', rental.id)
 
@@ -433,6 +437,26 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
                   <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Caução (R$)</label>
                   <input type="text" name="security_deposit" value={formData.security_deposit} onChange={handleCurrencyChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main font-bold focus:ring-2 focus:ring-accent outline-none" />
                 </div>
+              </div>
+            </div>
+
+            {/* 6. Vistorias (Notas) */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-accent border-b border-border-color pb-2">
+                <Camera className="w-5 h-5" />
+                <h3 className="font-black uppercase text-xs tracking-widest">Observações de Vistoria</h3>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Vistoria Inicial (Notas)</label>
+                  <textarea name="start_inspection_notes" value={formData.start_inspection_notes} onChange={handleChange} rows="2" className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2 text-xs text-main focus:ring-2 focus:ring-accent outline-none resize-none" />
+                </div>
+                {rental.status === 'completed' && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Vistoria Final (Notas)</label>
+                    <textarea name="end_inspection_notes" value={formData.end_inspection_notes} onChange={handleChange} rows="2" className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2 text-xs text-main focus:ring-2 focus:ring-accent outline-none resize-none" />
+                  </div>
+                )}
               </div>
             </div>
 
