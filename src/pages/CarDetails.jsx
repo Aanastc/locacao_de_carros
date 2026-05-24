@@ -463,96 +463,98 @@ export default function CarDetails() {
 			</div>
 
 			{/* Indicadores de Desempenho (KPIs) */}
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-				<div className="glass rounded-2xl p-5 border border-border-color shadow-sm">
-					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-1">
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+				<div className="bg-white/40 dark:bg-slate-900/40 rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
+					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-2">
 						Total Faturado
 					</p>
-					<p className="text-2xl font-black text-primary">
-						R${" "}
+					<p className="text-3xl font-black text-success">
+						<span className="text-sm font-bold mr-1">R$</span>
 						{incomes
 							.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
 							.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
 					</p>
-					<div className="flex items-center gap-1 mt-2 text-[10px] text-success font-bold">
-						<TrendUp className="w-3 h-3" /> Receita bruta acumulada
+					<div className="flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-lg bg-success/10 text-[10px] text-success font-bold w-max">
+						<TrendUp className="w-3.5 h-3.5" /> Receita Bruta Acumulada
 					</div>
 				</div>
 
-				<div className="glass rounded-2xl p-5 border border-border-color shadow-sm">
-					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-1">
+				<div className="bg-white/40 dark:bg-slate-900/40 rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
+					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-2">
 						Total em Gastos
 					</p>
-					<p className="text-2xl font-black text-danger">
-						R${" "}
+					<p className="text-3xl font-black text-danger">
+						<span className="text-sm font-bold mr-1">R$</span>
 						{expenses
 							.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
 							.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
 					</p>
-					<div className="flex items-center gap-1 mt-2 text-[10px] text-danger font-bold">
-						<ArrowDownRight className="w-3 h-3" /> Saídas e manutenções
+					<div className="flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-lg bg-danger/10 text-[10px] text-danger font-bold w-max">
+						<ArrowDownRight className="w-3.5 h-3.5" /> Saídas e Manutenções
 					</div>
 				</div>
 
-				<div className="glass rounded-2xl p-5 border border-border-color shadow-sm">
-					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-1">
+				<div className="bg-white/40 dark:bg-slate-900/40 rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
+					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-2">
 						Saldo Líquido
 					</p>
 					<p
-						className={`text-2xl font-black ${incomes.reduce((acc, curr) => acc + parseFloat(curr.amount), 0) - expenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0) >= 0 ? "text-primary" : "text-danger"}`}>
-						R${" "}
+						className={`text-3xl font-black ${incomes.reduce((acc, curr) => acc + parseFloat(curr.amount), 0) - expenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0) >= 0 ? "text-primary" : "text-danger"}`}>
+						<span className="text-sm font-bold mr-1">R$</span>
 						{(
 							incomes.reduce((acc, curr) => acc + parseFloat(curr.amount), 0) -
 							expenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
 						).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
 					</p>
-					<div className="flex items-center gap-1 mt-2 text-[10px] text-muted-olive font-bold">
-						<CurrencyDollar className="w-3 h-3" /> Resultado do ativo
+					<div className="flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-lg bg-primary/10 text-[10px] text-primary font-bold w-max">
+						<CurrencyDollar className="w-3.5 h-3.5" /> Resultado do Ativo
 					</div>
 				</div>
 
-				<div className="glass rounded-2xl p-5 border border-border-color shadow-sm">
-					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-1">
+				<div className="bg-white/40 dark:bg-slate-900/40 rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
+					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-2">
 						Quilometragem
 					</p>
-					<p className="text-2xl font-black text-main">
+					<p className="text-3xl font-black text-main">
 						{car.current_km?.toLocaleString() || "0"}{" "}
 						<span className="text-xs font-medium text-muted-olive">km</span>
 					</p>
-					<div className="flex items-center gap-1 mt-2 text-[10px] text-accent font-bold">
-						<MapPin className="w-3 h-3" /> Rodagem atual
+					<div className="flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-lg bg-accent/10 text-[10px] text-accent font-bold w-max">
+						<MapPin className="w-3.5 h-3.5" /> Rodagem Atual
 					</div>
 				</div>
 			</div>
 
 			{/* Painel de Ações Rápidas */}
-			<div className="flex flex-wrap items-center gap-4 bg-primary/5 p-4 rounded-2xl border border-primary/10">
-				{activeRental ? (
-					<button
-						onClick={() => setIsFinishModalOpen(true)}
-						className="bg-primary hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-primary/20">
-						<CheckCircle className="w-5 h-5" /> Encerrar Aluguel
-					</button>
-				) : car.status !== "Manutenção" ? (
-					<button
-						onClick={() => setIsRentModalOpen(true)}
-						className="bg-accent hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-black transition-all flex items-center gap-2 shadow-lg shadow-accent/20 border border-accent/30">
-						<PlayCircle className="w-5 h-5" /> Iniciar Aluguel
-					</button>
-				) : null}
+			<div className="flex flex-col sm:flex-row sm:flex-wrap items-center justify-between gap-4 bg-white/40 dark:bg-slate-900/40 p-5 rounded-3xl border border-border-color/50 shadow-sm">
+				<div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+					{activeRental ? (
+						<button
+							onClick={() => setIsFinishModalOpen(true)}
+							className="bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 w-full sm:w-auto">
+							<CheckCircle className="w-5 h-5" /> Encerrar Aluguel
+						</button>
+					) : car.status !== "Manutenção" ? (
+						<button
+							onClick={() => setIsRentModalOpen(true)}
+							className="bg-accent hover:opacity-90 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20 w-full sm:w-auto">
+							<PlayCircle className="w-5 h-5" /> Iniciar Aluguel
+						</button>
+					) : null}
 
-				<button
-					onClick={() => setIsExpenseModalOpen(true)}
-					className="bg-danger hover:bg-danger/90 text-white px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-danger/20">
-					<CurrencyDollar className="w-5 h-5" /> Lançar Despesa
-				</button>
+					<button
+						onClick={() => setIsExpenseModalOpen(true)}
+						className="bg-danger hover:bg-danger-hover text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-danger/20 w-full sm:w-auto">
+						<CurrencyDollar className="w-5 h-5" /> Lançar Despesa
+					</button>
+				</div>
 
 				{/* Botão de Exportar Simplificado */}
 				<button
 					onClick={handleExportAnnual}
-					className="bg-accent/10 hover:bg-accent/20 text-accent px-5 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2 border border-accent/20">
+					className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-main px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 border border-border-color/50 w-full sm:w-auto shadow-sm">
 					<DownloadSimple className="w-5 h-5" />
-					Baixar Planilha
+					Baixar Relatório
 				</button>
 			</div>
 
