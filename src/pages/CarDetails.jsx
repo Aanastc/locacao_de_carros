@@ -49,7 +49,7 @@ export default function CarDetails() {
   const [editingIncome, setEditingIncome] = useState(null)
   const [editingExpense, setEditingExpense] = useState(null)
   const [initialIncomeData, setInitialIncomeData] = useState(null)
-  const [activeFinanceTab, setActiveFinanceTab] = useState('gastos') // gastos, receitas
+  const [activeFinanceTab, setActiveFinanceTab] = useState('cronograma') // cronograma, gastos, receitas
 
   const generatePaymentSchedule = (rental) => {
     if (!rental) return []
@@ -644,21 +644,84 @@ export default function CarDetails() {
             <div className="glass rounded-2xl border border-border-color shadow-sm overflow-hidden">
               <div className="flex border-b border-border-color bg-bg-main/50">
                 <button 
+                  onClick={() => setActiveFinanceTab('cronograma')}
+                  className={`flex-1 py-4 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeFinanceTab === 'cronograma' ? 'bg-bg-card text-accent border-b-2 border-accent' : 'text-muted-olive hover:text-accent'}`}
+                >
+                  <Calendar className="w-4 h-4" /> Cronograma
+                </button>
+                <button 
                   onClick={() => setActiveFinanceTab('gastos')}
-                  className={`flex-1 py-4 px-6 text-sm font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeFinanceTab === 'gastos' ? 'bg-bg-card text-danger border-b-2 border-danger' : 'text-muted-olive hover:text-danger'}`}
+                  className={`flex-1 py-4 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeFinanceTab === 'gastos' ? 'bg-bg-card text-danger border-b-2 border-danger' : 'text-muted-olive hover:text-danger'}`}
                 >
                   <Wrench className="w-4 h-4" /> Gastos
                 </button>
                 <button 
                   onClick={() => setActiveFinanceTab('receitas')}
-                  className={`flex-1 py-4 px-6 text-sm font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeFinanceTab === 'receitas' ? 'bg-bg-card text-primary border-b-2 border-primary' : 'text-muted-olive hover:text-primary'}`}
+                  className={`flex-1 py-4 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeFinanceTab === 'receitas' ? 'bg-bg-card text-primary border-b-2 border-primary' : 'text-muted-olive hover:text-primary'}`}
                 >
                   <CurrencyDollar className="w-4 h-4" /> Receitas
                 </button>
               </div>
 
               <div className="p-0">
-                {activeFinanceTab === 'gastos' ? (
+                {activeFinanceTab === 'cronograma' ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead className="bg-bg-main/30 border-b border-border-color">
+                        <tr className="text-[10px] uppercase font-black tracking-widest text-muted-olive">
+                          <th className="py-3 px-6">Vencimento</th>
+                          <th className="py-3 px-6">Parcela</th>
+                          <th className="py-3 px-6">Valor</th>
+                          <th className="py-3 px-6">Status</th>
+                          <th className="py-3 px-6">Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-sm">
+                        {paymentSchedule.length === 0 ? (
+                          <tr><td colSpan="5" className="py-8 text-center italic text-muted-olive">Nenhum contrato ativo para gerar cronograma.</td></tr>
+                        ) : (
+                          paymentSchedule.map(sched => (
+                            <tr key={sched.id} id={`row-${sched.id}`} className={`border-b border-border-color last:border-0 hover:bg-accent/5 ${sched.isPaid ? 'opacity-50' : ''}`}>
+                              <td className="py-4 px-6 font-bold">{new Date(sched.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+                              <td className="py-4 px-6 text-muted-olive text-xs">{sched.period}/{sched.totalPeriods}</td>
+                              <td className="py-4 px-6 font-bold text-main">R$ {Number(sched.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                              <td className="py-4 px-6">
+                                {sched.isPaid ? (
+                                  <span className="px-2.5 py-1 rounded-lg bg-success/10 text-success text-[10px] font-black uppercase border border-success/20 flex items-center gap-1 w-max">
+                                    <CheckCircle className="w-3 h-3" /> Pago
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-1 rounded-lg bg-warning/10 text-warning text-[10px] font-black uppercase border border-warning/20 flex items-center gap-1 w-max">
+                                    <ClockCounterClockwise className="w-3 h-3" /> Pendente
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-4 px-6">
+                                {!sched.isPaid ? (
+                                  <button 
+                                    onClick={() => {
+                                      setInitialIncomeData({
+                                        date: sched.date,
+                                        amount: sched.amount,
+                                        notes: `Pagamento da parcela ${sched.period}/${sched.totalPeriods} do aluguel ativo.`
+                                      })
+                                      setIsIncomeModalOpen(true)
+                                    }}
+                                    className="bg-accent hover:bg-accent/90 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-sm shadow-accent/20 transition-all flex items-center gap-1"
+                                  >
+                                    <CurrencyDollar className="w-3 h-3" /> Lançar
+                                  </button>
+                                ) : (
+                                  <span className="text-[10px] uppercase font-bold text-muted-olive">Confirmado</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : activeFinanceTab === 'gastos' ? (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead className="bg-bg-main/30 border-b border-border-color">
