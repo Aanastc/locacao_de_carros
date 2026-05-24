@@ -97,12 +97,17 @@ export default function CarDetails() {
   }
 
   const paymentSchedule = activeRental ? generatePaymentSchedule(activeRental).map(sched => {
-    const isPaid = incomes.some(inc => 
+    const matchedIncome = incomes.find(inc => 
       inc.rental_id === activeRental.id && 
       (inc.notes?.includes(`parcela ${sched.period}/${sched.totalPeriods}`) || 
       (inc.payment_date === sched.date && parseFloat(inc.amount) === parseFloat(sched.amount)))
     )
-    return { ...sched, isPaid }
+    return { 
+      ...sched, 
+      isPaid: !!matchedIncome,
+      paidAmount: matchedIncome ? parseFloat(matchedIncome.amount) : null,
+      paidDate: matchedIncome ? matchedIncome.payment_date : null
+    }
   }) : []
 
   useEffect(() => {
@@ -682,9 +687,27 @@ export default function CarDetails() {
                         ) : (
                           paymentSchedule.map(sched => (
                             <tr key={sched.id} id={`row-${sched.id}`} className={`border-b border-border-color last:border-0 hover:bg-accent/5 ${sched.isPaid ? 'opacity-50' : ''}`}>
-                              <td className="py-4 px-6 font-bold">{new Date(sched.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+                              <td className="py-4 px-6 font-bold text-main">
+                                {sched.isPaid && sched.paidDate !== sched.date ? (
+                                  <div className="flex flex-col leading-tight">
+                                    <span className="line-through text-[10px] text-muted-olive">{new Date(sched.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+                                    <span className="text-success">{new Date(sched.paidDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+                                  </div>
+                                ) : (
+                                  new Date(sched.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+                                )}
+                              </td>
                               <td className="py-4 px-6 text-muted-olive text-xs">{sched.period}/{sched.totalPeriods}</td>
-                              <td className="py-4 px-6 font-bold text-main">R$ {Number(sched.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                              <td className="py-4 px-6 font-bold text-main">
+                                {sched.isPaid && sched.paidAmount !== sched.amount ? (
+                                  <div className="flex flex-col leading-tight">
+                                    <span className="line-through text-[10px] text-muted-olive">R$ {Number(sched.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                    <span className="text-success">R$ {Number(sched.paidAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                  </div>
+                                ) : (
+                                  <span>R$ {Number(sched.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                )}
+                              </td>
                               <td className="py-4 px-6">
                                 {sched.isPaid ? (
                                   <span className="px-2.5 py-1 rounded-lg bg-success/10 text-success text-[10px] font-black uppercase border border-success/20 flex items-center gap-1 w-max">
