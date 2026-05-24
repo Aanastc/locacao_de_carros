@@ -533,7 +533,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="client_name"
 											value={formData.client_name}
 											onChange={handleChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="João Silva"
 										/>
 									</div>
@@ -547,7 +547,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="client_email"
 											value={formData.client_email}
 											onChange={handleChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="email@exemplo.com"
 										/>
 									</div>
@@ -561,7 +561,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="client_contact"
 											value={formData.client_contact}
 											onChange={handleChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="(11) 99999-9999"
 										/>
 									</div>
@@ -575,7 +575,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="client_document"
 											value={formData.client_document}
 											onChange={handleChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="000.000.000-00"
 										/>
 									</div>
@@ -589,7 +589,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="client_cnh"
 											value={formData.client_cnh}
 											onChange={handleChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="Número da Carteira"
 										/>
 									</div>
@@ -618,7 +618,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											value={formData.client_cep}
 											onChange={handleCEP}
 											maxLength="8"
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="00000000"
 										/>
 									</div>
@@ -632,7 +632,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="client_address"
 											value={formData.client_address}
 											onChange={handleChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="Av. Paulista"
 										/>
 									</div>
@@ -646,7 +646,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="client_address_number"
 											value={formData.client_address_number}
 											onChange={handleChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="123"
 										/>
 									</div>
@@ -659,7 +659,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="client_address_complement"
 											value={formData.client_address_complement}
 											onChange={handleChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="Apto 10"
 										/>
 									</div>
@@ -673,7 +673,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="client_neighborhood"
 											value={formData.client_neighborhood}
 											onChange={handleChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="Centro"
 										/>
 									</div>
@@ -687,7 +687,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="client_city"
 											value={formData.client_city}
 											onChange={handleChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="São Paulo"
 										/>
 									</div>
@@ -702,7 +702,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											value={formData.client_state}
 											onChange={handleChange}
 											maxLength="2"
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="SP"
 										/>
 									</div>
@@ -815,7 +815,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 													onChange={(e) =>
 														handleReferenceChange(idx, "name", e.target.value)
 													}
-													className="flex-1 bg-bg-main border border-border-color rounded-xl px-3 py-2 text-xs text-main"
+													className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-accent/10 focus:border-accent outline-none transition-all shadow-sm"
 													placeholder="Nome"
 												/>
 												<input
@@ -824,7 +824,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 													onChange={(e) =>
 														handleReferenceChange(idx, "phone", e.target.value)
 													}
-													className="flex-1 bg-bg-main border border-border-color rounded-xl px-3 py-2 text-xs text-main"
+													className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-accent/10 focus:border-accent outline-none transition-all shadow-sm"
 													placeholder="Telefone"
 												/>
 												{formData.personal_references.length > 1 && (
@@ -850,7 +850,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="spouse_name"
 											value={formData.spouse_name}
 											onChange={handleChange}
-											className="bg-bg-main border border-border-color rounded-xl px-3 py-2 text-xs text-main"
+											className="bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-accent/10 focus:border-accent outline-none transition-all shadow-sm"
 											placeholder="Nome"
 										/>
 										<input
@@ -858,7 +858,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="spouse_phone"
 											value={formData.spouse_phone}
 											onChange={handleChange}
-											className="bg-bg-main border border-border-color rounded-xl px-3 py-2 text-xs text-main"
+											className="bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-accent/10 focus:border-accent outline-none transition-all shadow-sm"
 											placeholder="Telefone"
 										/>
 										<input
@@ -866,7 +866,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="spouse_cpf"
 											value={formData.spouse_cpf}
 											onChange={handleChange}
-											className="bg-bg-main border border-border-color rounded-xl px-3 py-2 text-xs text-main"
+											className="bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-accent/10 focus:border-accent outline-none transition-all shadow-sm"
 											placeholder="CPF"
 										/>
 									</div>
@@ -894,7 +894,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="start_date"
 											value={formData.start_date}
 											onChange={handleChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm dark:[color-scheme:dark]"
 										/>
 									</div>
 									<div className="space-y-1.5">
@@ -907,7 +907,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="expected_end_date"
 											value={formData.expected_end_date}
 											onChange={handleChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm dark:[color-scheme:dark]"
 										/>
 									</div>
 									<div className="space-y-1.5">
@@ -920,7 +920,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="initial_km"
 											value={formData.initial_km}
 											onChange={handleChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 										/>
 									</div>
 									<div className="sm:col-span-2 space-y-1.5 mt-2">
@@ -943,7 +943,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										</div>
 										{firstPaymentOption === "custom" && (
 											<div className="mt-2 animate-in fade-in slide-in-from-top-2">
-												<input type="date" required={firstPaymentOption === "custom"} value={customFirstPaymentDate} onChange={(e) => setCustomFirstPaymentDate(e.target.value)} className="w-full sm:w-1/2 bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
+												<input type="date" required={firstPaymentOption === "custom"} value={customFirstPaymentDate} onChange={(e) => setCustomFirstPaymentDate(e.target.value)} className="w-full sm:w-1/2 bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm dark:[color-scheme:dark]" />
 											</div>
 										)}
 									</div>
@@ -965,7 +965,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="unit_price"
 											value={formData.unit_price}
 											onChange={handleCurrencyChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-bold focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="0,00"
 										/>
 									</div>
@@ -978,7 +978,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											name="security_deposit"
 											value={formData.security_deposit}
 											onChange={handleCurrencyChange}
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-bold focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm"
 											placeholder="0,00"
 										/>
 									</div>
@@ -1068,7 +1068,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											value={formData.start_inspection_notes}
 											onChange={handleChange}
 											rows="3"
-											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none resize-none"
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-medium focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm resize-none"
 											placeholder="Descreva avarias, nível de combustível, estado dos pneus, etc."
 										/>
 									</div>
