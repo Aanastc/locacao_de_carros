@@ -11,6 +11,7 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [durationText, setDurationText] = useState('')
   const [files, setFiles] = useState({
     uber_file: null,
     criminal_file: null,
@@ -59,7 +60,7 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
     // Contrato
     start_date: formatToLocalDatetime(rental.start_date),
     expected_end_date: formatToLocalDatetime(rental.expected_end_date),
-    rental_model: rental.rental_model || 'Por Dia',
+    rental_model: 'Por Semana',
     unit_price: '', 
     initial_km: rental.initial_km || '',
     total_price: formatInitialCurrency(rental.total_price),
@@ -128,6 +129,30 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
 
     setFormData(prev => ({ ...prev, [name]: value }))
   }
+
+  useEffect(() => {
+    if (formData.start_date && formData.expected_end_date) {
+      const start = new Date(formData.start_date)
+      const end = new Date(formData.expected_end_date)
+      
+      let diffMs = end - start
+      if (diffMs < 0) diffMs = 0
+      
+      const diffHours = diffMs / (1000 * 60 * 60)
+      const diffDays = Math.max(1, Math.ceil(diffHours / 24))
+      
+      const multiplier = Math.ceil(diffDays / 7)
+      const text = `Duração: ${multiplier} semana${multiplier > 1 ? 's' : ''}`
+      setDurationText(text)
+
+      const unitValue = parseMaskedValue(formData.unit_price)
+      if (!isNaN(unitValue) && formData.unit_price !== '') {
+        const calculated = unitValue * multiplier
+        const formattedTotal = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(calculated)
+        setFormData(prev => ({ ...prev, total_price: formattedTotal }))
+      }
+    }
+  }, [formData.start_date, formData.expected_end_date, formData.unit_price])
 
   const handleReferenceChange = (index, field, value) => {
     const newRefs = [...formData.personal_references]
@@ -430,12 +455,25 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
                   <input required type="datetime-local" name="expected_end_date" value={formData.expected_end_date} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Total Atual (R$)</label>
-                  <input required type="text" name="total_price" value={formData.total_price} onChange={handleCurrencyChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main font-black focus:ring-2 focus:ring-accent outline-none" />
+                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Modelo de Aluguel</label>
+                  <div className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main font-bold">Por Semana</div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Valor Unitário (Opcional)</label>
+                  <input type="text" name="unit_price" value={formData.unit_price} onChange={handleCurrencyChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold" placeholder="Recalcular (R$)" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Caução (R$)</label>
                   <input type="text" name="security_deposit" value={formData.security_deposit} onChange={handleCurrencyChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main font-bold focus:ring-2 focus:ring-accent outline-none" />
+                </div>
+                <div className="sm:col-span-2 p-4 bg-primary/5 border border-primary/20 rounded-2xl flex justify-between items-center">
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-primary tracking-widest">Total Estimado</p>
+                    <p className="text-xs font-bold text-muted-olive mt-0.5">{durationText}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-primary">R$ {formData.total_price || '0,00'}</p>
+                  </div>
                 </div>
               </div>
             </div>

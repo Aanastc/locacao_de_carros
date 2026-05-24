@@ -65,7 +65,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
     // 5. Contrato
     start_date: localDatetime,
     expected_end_date: localDatetime,
-    rental_model: 'Por Dia',
+    rental_model: 'Por Semana',
     unit_price: '',
     initial_km: car.current_km || '',
     total_price: '',
@@ -146,13 +146,8 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
       let multiplier = diffDays
       let text = `Duração: ${diffDays} dia${diffDays > 1 ? 's' : ''}`
 
-      if (formData.rental_model === 'Por Semana') {
-        multiplier = Math.ceil(diffDays / 7)
-        text = `Duração: ${multiplier} semana${multiplier > 1 ? 's' : ''}`
-      } else if (formData.rental_model === 'Por Mês') {
-        multiplier = Math.ceil(diffDays / 30)
-        text = `Duração: ${multiplier} mês${multiplier > 1 ? 'es' : ''}`
-      }
+      multiplier = Math.ceil(diffDays / 7)
+      text = `Duração: ${multiplier} semana${multiplier > 1 ? 's' : ''}`
 
       setDurationText(text)
 
@@ -590,12 +585,8 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
                     <input required type="number" name="initial_km" value={formData.initial_km} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Modelo de Aluguel *</label>
-                    <select name="rental_model" value={formData.rental_model} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer dark:[color-scheme:dark]">
-                      <option value="Por Dia" style={optionStyle}>Por Dia</option>
-                      <option value="Por Semana" style={optionStyle}>Por Semana</option>
-                      <option value="Por Mês" style={optionStyle}>Por Mês</option>
-                    </select>
+                    <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Modelo de Aluguel</label>
+                    <div className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main font-bold">Por Semana</div>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Valor Unitário (R$) *</label>
