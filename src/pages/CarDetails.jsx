@@ -93,6 +93,12 @@ export default function CarDetails() {
 		const amountPerPeriod = Number(rental.total_price) / multiplier;
 
 		for (let i = 0; i < multiplier; i++) {
+			if (increment.months) {
+				currentDate.setMonth(currentDate.getMonth() + increment.months);
+			} else {
+				currentDate.setDate(currentDate.getDate() + increment.days);
+			}
+
 			let paymentDate = new Date(currentDate);
 
 			dates.push({
@@ -102,12 +108,6 @@ export default function CarDetails() {
 				period: i + 1,
 				totalPeriods: multiplier,
 			});
-
-			if (increment.months) {
-				currentDate.setMonth(currentDate.getMonth() + increment.months);
-			} else {
-				currentDate.setDate(currentDate.getDate() + increment.days);
-			}
 		}
 
 		return dates;
@@ -772,30 +772,39 @@ export default function CarDetails() {
 								</div>
 
 								<div className="space-y-4">
-									<div className="flex justify-between items-center bg-white/40 dark:bg-slate-950/40 p-4 rounded-xl border border-border-color">
-										<div>
-											<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">
-												Vencimento Prox.
-											</p>
-											<p className="font-black text-danger">
-												{new Date(
-													activeRental.expected_end_date,
-												).toLocaleDateString("pt-BR")}
-											</p>
-										</div>
-										<div className="text-right">
-											<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">
-												Total Acordado
-											</p>
-											<p className="font-black text-primary">
-												R${" "}
-												{Number(activeRental.total_price).toLocaleString(
-													"pt-BR",
-													{ minimumFractionDigits: 2 },
-												)}
-											</p>
-										</div>
-									</div>
+									{(() => {
+										const rentStart = new Date(activeRental.start_date);
+										const rentEnd = new Date(activeRental.expected_end_date);
+										const today = new Date();
+										const totalWeeks = Math.max(1, Math.ceil((rentEnd - rentStart) / (7 * 24 * 60 * 60 * 1000)));
+										const currentWeekRaw = Math.ceil((today - rentStart) / (7 * 24 * 60 * 60 * 1000));
+										const currentWeek = Math.max(1, Math.min(currentWeekRaw, totalWeeks));
+										
+										return (
+											<div className="bg-white/40 dark:bg-slate-950/40 p-4 rounded-xl border border-border-color space-y-3">
+												<div className="flex justify-between items-center">
+													<div>
+														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Início</p>
+														<p className="font-black text-main">{rentStart.toLocaleDateString("pt-BR")}</p>
+													</div>
+													<div className="text-right">
+														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Devolução</p>
+														<p className="font-black text-main">{rentEnd.toLocaleDateString("pt-BR")}</p>
+													</div>
+												</div>
+												<div className="pt-3 border-t border-border-color/50 flex justify-between items-center">
+													<div>
+														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Andamento</p>
+														<p className="font-black text-accent">Semana {currentWeek} de {totalWeeks}</p>
+													</div>
+													<div className="text-right">
+														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Total Acordado</p>
+														<p className="font-black text-primary">R$ {Number(activeRental.total_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+													</div>
+												</div>
+											</div>
+										)
+									})()}
 								</div>
 							</div>
 						</div>
