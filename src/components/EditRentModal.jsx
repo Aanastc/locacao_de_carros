@@ -20,6 +20,27 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
     sne_file: null
   })
 
+  const calculateInitialFirstPayment = () => {
+    if (!rental.first_payment_date) return { option: 'one_week', customDate: '' }
+    
+    const startStr = rental.start_date.split('T')[0]
+    const firstPayStr = rental.first_payment_date
+    
+    if (firstPayStr === startStr) return { option: 'start', customDate: '' }
+    
+    const d = new Date(rental.start_date)
+    d.setDate(d.getDate() + 7)
+    const oneWeekStr = d.toISOString().split('T')[0]
+    
+    if (firstPayStr === oneWeekStr) return { option: 'one_week', customDate: '' }
+    
+    return { option: 'custom', customDate: firstPayStr }
+  }
+
+  const initialPaymentConfig = calculateInitialFirstPayment()
+  const [firstPaymentOption, setFirstPaymentOption] = useState(initialPaymentConfig.option)
+  const [customFirstPaymentDate, setCustomFirstPaymentDate] = useState(initialPaymentConfig.customDate)
+
   // Format dates for datetime-local input (YYYY-MM-DDTHH:mm)
   const formatToLocalDatetime = (dateString) => {
     if (!dateString) return ''
@@ -246,6 +267,17 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
       const startUtc = new Date(formData.start_date).toISOString()
       const endUtc = new Date(formData.expected_end_date).toISOString()
 
+      let firstPaymentDateVal = null
+      if (firstPaymentOption === 'start') {
+        firstPaymentDateVal = formData.start_date.split('T')[0]
+      } else if (firstPaymentOption === 'custom' && customFirstPaymentDate) {
+        firstPaymentDateVal = customFirstPaymentDate
+      } else {
+        const d = new Date(formData.start_date)
+        d.setDate(d.getDate() + 7)
+        firstPaymentDateVal = d.toISOString().split('T')[0]
+      }
+
       // 2. Update Rental
       const { error: rentalError } = await supabase.from('rentals')
         .update({
@@ -281,7 +313,9 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
           spouse_phone: formData.spouse_phone || null,
           spouse_cpf: formData.spouse_cpf || null,
           start_inspection_notes: formData.start_inspection_notes || null,
-          end_inspection_notes: formData.end_inspection_notes || null
+          end_inspection_notes: formData.end_inspection_notes || null,
+
+          first_payment_date: firstPaymentDateVal
         })
         .eq('id', rental.id)
 
@@ -453,6 +487,28 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Devolução Prevista *</label>
                   <input required type="datetime-local" name="expected_end_date" value={formData.expected_end_date} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
+                </div>
+                <div className="sm:col-span-2 space-y-1.5">
+                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Data do 1º Pagamento *</label>
+                  <div className="flex flex-col sm:flex-row gap-4 bg-bg-main border border-border-color rounded-xl p-4">
+                    <label className="flex items-center gap-2 cursor-pointer text-main text-sm">
+                      <input type="radio" name="first_payment" value="start" checked={firstPaymentOption === "start"} onChange={(e) => setFirstPaymentOption(e.target.value)} className="text-accent focus:ring-accent" />
+                      Na data inicial
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-main text-sm">
+                      <input type="radio" name="first_payment" value="one_week" checked={firstPaymentOption === "one_week"} onChange={(e) => setFirstPaymentOption(e.target.value)} className="text-accent focus:ring-accent" />
+                      Após 1 semana
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-main text-sm">
+                      <input type="radio" name="first_payment" value="custom" checked={firstPaymentOption === "custom"} onChange={(e) => setFirstPaymentOption(e.target.value)} className="text-accent focus:ring-accent" />
+                      Data específica
+                    </label>
+                  </div>
+                  {firstPaymentOption === "custom" && (
+                    <div className="mt-2 animate-in fade-in slide-in-from-top-2">
+                      <input type="date" required={firstPaymentOption === "custom"} value={customFirstPaymentDate} onChange={(e) => setCustomFirstPaymentDate(e.target.value)} className="w-full sm:w-1/2 bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Modelo de Aluguel</label>

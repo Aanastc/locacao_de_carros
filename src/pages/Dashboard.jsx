@@ -605,18 +605,21 @@ export default function Dashboard() {
 
               {/* Operations Column */}
               <div className="space-y-8">
-                {/* Alerts Section - Minimalist */}
-                <div className="bg-white/20 dark:bg-slate-900/20 rounded-[2rem] p-6 border border-border-color/30">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-6 text-danger">Alertas</h3>
-                  <div className="space-y-3">
+                {/* Alerts Section - Enhanced */}
+                <div className="bg-white/40 dark:bg-slate-900/40 rounded-[2rem] p-8 border border-border-color/50 shadow-lg shadow-black/5">
+                  <div className="flex items-center gap-3 mb-6">
+                    <WarningCircle className="w-6 h-6 text-danger" weight="bold" />
+                    <h3 className="text-lg font-black uppercase tracking-[0.1em] text-danger">Alertas</h3>
+                  </div>
+                  <div className="space-y-4">
                     {alerts.length === 0 ? (
-                      <p className="text-[10px] font-bold text-muted-olive/50 text-center py-6 italic">Nenhuma pendência hoje.</p>
+                      <p className="text-sm font-bold text-muted-olive/70 text-center py-8 italic">Nenhuma pendência hoje.</p>
                     ) : (
                       alerts.map((alert, idx) => (
-                        <div key={idx} className="group p-4 rounded-2xl hover:bg-white/50 dark:hover:bg-white/5 transition-all cursor-pointer">
-                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-olive/60 mb-1">{alert.title}</p>
-                          <p className="text-xs font-bold group-hover:text-primary transition-colors text-main">{alert.desc}</p>
-                          <Link to={`/car/${alert.carPlate}`} className="text-[9px] font-black text-primary/0 group-hover:text-primary transition-all mt-2 block">GERENCIAR →</Link>
+                        <div key={idx} className="group p-5 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-border-color/30 hover:border-danger/50 hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer shadow-sm">
+                          <p className="text-xs font-black uppercase tracking-widest text-danger/80 mb-2">{alert.title}</p>
+                          <p className="text-base font-bold text-main mb-3">{alert.desc}</p>
+                          <Link to={`/car/${alert.carPlate}`} className="text-xs font-black text-primary hover:text-primary/80 transition-all flex items-center gap-1">GERENCIAR <ArrowUpRight weight="bold" className="w-3 h-3" /></Link>
                         </div>
                       ))
                     )}

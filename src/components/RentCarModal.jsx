@@ -96,6 +96,9 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 
 	const [isInitialized, setIsInitialized] = useState(false);
 	const [durationText, setDurationText] = useState("");
+	
+	const [firstPaymentOption, setFirstPaymentOption] = useState("one_week"); // 'start', 'one_week', 'custom'
+	const [customFirstPaymentDate, setCustomFirstPaymentDate] = useState("");
 
 	// Load from localStorage on mount
 	useEffect(() => {
@@ -364,6 +367,18 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 
 			const startUtc = new Date(formData.start_date).toISOString();
 			const endUtc = new Date(formData.expected_end_date).toISOString();
+			
+			let firstPaymentDateVal = null;
+			if (firstPaymentOption === "start") {
+				firstPaymentDateVal = formData.start_date.split("T")[0];
+			} else if (firstPaymentOption === "custom" && customFirstPaymentDate) {
+				firstPaymentDateVal = customFirstPaymentDate;
+			} else {
+				// one_week default logic
+				const d = new Date(formData.start_date);
+				d.setDate(d.getDate() + 7);
+				firstPaymentDateVal = d.toISOString().split("T")[0];
+			}
 
 			// 2. Insert Rental
 			const { error: rentalError } = await supabase.from("rentals").insert([
@@ -393,6 +408,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 						? parseMaskedValue(formData.security_deposit)
 						: null,
 					payment_status: formData.payment_status,
+					first_payment_date: firstPaymentDateVal,
 					status: "active",
 
 					uber_file_url: urls.uber,
@@ -907,7 +923,31 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none"
 										/>
 									</div>
-									<div className="space-y-1.5">
+									<div className="sm:col-span-2 space-y-1.5 mt-2">
+										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+											Data do 1º Pagamento *
+										</label>
+										<div className="flex flex-col sm:flex-row gap-4 bg-bg-main border border-border-color rounded-xl p-4">
+											<label className="flex items-center gap-2 cursor-pointer text-main text-sm">
+												<input type="radio" name="first_payment" value="start" checked={firstPaymentOption === "start"} onChange={(e) => setFirstPaymentOption(e.target.value)} className="text-accent focus:ring-accent" />
+												Na data inicial
+											</label>
+											<label className="flex items-center gap-2 cursor-pointer text-main text-sm">
+												<input type="radio" name="first_payment" value="one_week" checked={firstPaymentOption === "one_week"} onChange={(e) => setFirstPaymentOption(e.target.value)} className="text-accent focus:ring-accent" />
+												Após 1 semana
+											</label>
+											<label className="flex items-center gap-2 cursor-pointer text-main text-sm">
+												<input type="radio" name="first_payment" value="custom" checked={firstPaymentOption === "custom"} onChange={(e) => setFirstPaymentOption(e.target.value)} className="text-accent focus:ring-accent" />
+												Data específica
+											</label>
+										</div>
+										{firstPaymentOption === "custom" && (
+											<div className="mt-2 animate-in fade-in slide-in-from-top-2">
+												<input type="date" required={firstPaymentOption === "custom"} value={customFirstPaymentDate} onChange={(e) => setCustomFirstPaymentDate(e.target.value)} className="w-full sm:w-1/2 bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
+											</div>
+										)}
+									</div>
+									<div className="space-y-1.5 mt-2">
 										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
 											Modelo de Aluguel
 										</label>

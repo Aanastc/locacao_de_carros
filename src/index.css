@@ -18,38 +18,38 @@
 
 @layer base {
   :root {
-    /* MODO CLARO - Structured UI Palette */
-    --bg-main: #F7F3EF;
+    /* MODO CLARO - Structured UI Palette (Modern & Premium) */
+    --bg-main: #F8FAFC;
     --bg-card: #FFFFFF;
-    --text-main: #2E2A28;
-    --text-muted: #6E625C;
-    --border-color: #E6DAD1;
+    --text-main: #0F172A;
+    --text-muted: #64748B;
+    --border-color: #E2E8F0;
     
     /* Functional Colors */
-    --primary: #3FA796;        /* Verde (Sucesso/Entrada) */
-    --primary-hover: #2E8C7D;
-    --success: #3FA796;
-    --success-hover: #2E8C7D;
-    --success-soft: #E6F4F1;
+    --primary: #2563EB;        /* Blue 600 */
+    --primary-hover: #1D4ED8;  /* Blue 700 */
+    --success: #10B981;        /* Emerald 500 */
+    --success-hover: #059669;  /* Emerald 600 */
+    --success-soft: #D1FAE5;   
     
-    --danger: #E63946;         /* Vermelho (Despesa/Erro) */
-    --danger-hover: #C92F3A;
-    --danger-soft: #FDEBEC;
+    --danger: #EF4444;         /* Red 500 */
+    --danger-hover: #DC2626;   /* Red 600 */
+    --danger-soft: #FEE2E2;    
     
-    --brand: #E8A0BF;          /* Rosa (Branding) */
-    --brand-hover: #D988AA;
-    --brand-soft: #F9E6EF;
+    --brand: #6366F1;          /* Indigo 500 */
+    --brand-hover: #4F46E5;    /* Indigo 600 */
+    --brand-soft: #E0E7FF;     
     
-    --base-brown: #8B6F5C;     /* Marrom (Estrutural) */
-    --base-brown-dark: #6F5747;
-    --base-brown-light: #C9B8A8;
+    --base-brown: #334155;     /* Slate 700 (Kept variable name for compatibility) */
+    --base-brown-dark: #1E293B; /* Slate 800 */
+    --base-brown-light: #94A3B8; /* Slate 400 */
     
-    --secondary: #8B6F5C;
-    --secondary-hover: #6F5747;
-    --accent: #E8A0BF;
+    --secondary: #475569;      /* Slate 600 */
+    --secondary-hover: #334155; /* Slate 700 */
+    --accent: #6366F1;
 
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(230, 218, 209, 0.5);
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --glass-border: rgba(226, 232, 240, 0.6);
   }
 
   .dark {

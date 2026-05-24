@@ -93,10 +93,15 @@ export default function CarDetails() {
 		const amountPerPeriod = Number(rental.total_price) / multiplier;
 
 		for (let i = 0; i < multiplier; i++) {
-			if (increment.months) {
-				currentDate.setMonth(currentDate.getMonth() + increment.months);
+			if (i === 0 && rental.first_payment_date) {
+				const parts = rental.first_payment_date.split("-");
+				currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
 			} else {
-				currentDate.setDate(currentDate.getDate() + increment.days);
+				if (increment.months) {
+					currentDate.setMonth(currentDate.getMonth() + increment.months);
+				} else {
+					currentDate.setDate(currentDate.getDate() + increment.days);
+				}
 			}
 
 			let paymentDate = new Date(currentDate);
@@ -538,7 +543,7 @@ export default function CarDetails() {
 
 				<button
 					onClick={() => setIsExpenseModalOpen(true)}
-					className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-primary/20">
+					className="bg-danger hover:bg-danger/90 text-white px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-danger/20">
 					<CurrencyDollar className="w-5 h-5" /> Lançar Despesa
 				</button>
 
