@@ -24,7 +24,7 @@ export default function Cars() {
     if (user) {
       fetchCars()
     }
-  }, [user])
+  }, [user?.id])
 
   // Sync state if URL changes
   useEffect(() => {

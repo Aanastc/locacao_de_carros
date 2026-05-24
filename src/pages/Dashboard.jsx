@@ -66,7 +66,7 @@ export default function Dashboard() {
       fetchUserProfile()
       fetchAvailablePeriods()
     }
-  }, [user, filterPeriod, selectedMonth, selectedYear])
+  }, [user?.id, filterPeriod, selectedMonth, selectedYear])
 
   const fetchUserProfile = async () => {
     try {

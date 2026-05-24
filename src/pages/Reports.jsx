@@ -31,7 +31,7 @@ export default function Reports() {
       fetchReportsData()
       fetchAvailablePeriods()
     }
-  }, [user, filterPeriod, selectedMonth, selectedYear])
+  }, [user?.id, filterPeriod, selectedMonth, selectedYear])
 
   const fetchAvailablePeriods = async () => {
     try {
