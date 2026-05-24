@@ -492,7 +492,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										)}
 									</div>
 									<span
-										className={`text-[9px] font-black uppercase tracking-tighter ${isActive ? "text-accent" : "text-slate-400"}`}>
+										className={`text-[11px] font-black uppercase tracking-tighter ${isActive ? "text-accent" : "text-slate-400"}`}>
 										{s.name}
 									</span>
 								</div>
@@ -524,7 +524,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 								</div>
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									<div className="space-y-1.5 sm:col-span-2">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Nome Completo *
 										</label>
 										<input
@@ -538,7 +538,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											E-mail *
 										</label>
 										<input
@@ -552,7 +552,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Contato/WhatsApp *
 										</label>
 										<input
@@ -566,7 +566,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											CPF/CNPJ *
 										</label>
 										<input
@@ -580,7 +580,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Nº da CNH *
 										</label>
 										<input
@@ -608,7 +608,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 								</div>
 								<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											CEP *
 										</label>
 										<input
@@ -623,7 +623,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5 sm:col-span-2">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Rua/Logradouro *
 										</label>
 										<input
@@ -637,7 +637,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Número *
 										</label>
 										<input
@@ -651,7 +651,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5 sm:col-span-2">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Complemento
 										</label>
 										<input
@@ -664,7 +664,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Bairro *
 										</label>
 										<input
@@ -678,7 +678,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Cidade *
 										</label>
 										<input
@@ -692,7 +692,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											UF *
 										</label>
 										<input
@@ -749,7 +749,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										},
 									].map((f) => (
 										<div key={f.id} className="space-y-1.5">
-											<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+											<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 												{f.label}
 											</label>
 											<input
@@ -796,13 +796,13 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 
 								<div className="space-y-4">
 									<div className="flex justify-between items-center border-b border-border-color pb-2">
-										<h4 className="text-[10px] font-black text-muted-olive uppercase tracking-widest">
+										<h4 className="text-xs font-black text-muted-olive uppercase tracking-widest">
 											Referências Pessoais
 										</h4>
 										<button
 											type="button"
 											onClick={addReference}
-											className="text-[10px] font-bold text-accent">
+											className="text-xs font-bold text-accent">
 											+ Adicionar
 										</button>
 									</div>
@@ -841,7 +841,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 								</div>
 
 								<div className="space-y-3 pt-4">
-									<h4 className="text-[10px] font-black text-muted-olive uppercase tracking-widest border-b border-border-color pb-2">
+									<h4 className="text-xs font-black text-muted-olive uppercase tracking-widest border-b border-border-color pb-2">
 										Informações do Cônjuge (Opcional)
 									</h4>
 									<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -885,7 +885,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 								</div>
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Início da Locação *
 										</label>
 										<input
@@ -898,7 +898,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Devolução Prevista *
 										</label>
 										<input
@@ -911,7 +911,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											KM Inicial *
 										</label>
 										<input
@@ -924,7 +924,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="sm:col-span-2 space-y-1.5 mt-2">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Data do 1º Pagamento *
 										</label>
 										<div className="flex flex-col sm:flex-row gap-4 bg-bg-main border border-border-color rounded-xl p-4">
@@ -948,7 +948,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										)}
 									</div>
 									<div className="space-y-1.5 mt-2">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Modelo de Aluguel
 										</label>
 										<div className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main font-bold">
@@ -956,7 +956,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										</div>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Valor Unitário (R$) *
 										</label>
 										<input
@@ -970,7 +970,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Caução (R$)
 										</label>
 										<input
@@ -984,7 +984,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 									</div>
 									<div className="sm:col-span-2 p-4 bg-primary/5 border border-primary/20 rounded-2xl flex justify-between items-center">
 										<div>
-											<p className="text-[10px] font-black uppercase text-primary tracking-widest">
+											<p className="text-xs font-black uppercase text-primary tracking-widest">
 												Total Estimado
 											</p>
 											<p className="text-xs text-muted-olive mt-0.5">
@@ -1013,7 +1013,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 
 								<div className="space-y-4">
 									<div className="space-y-2">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Fotos da Vistoria (Múltiplas)
 										</label>
 										<input
@@ -1031,7 +1031,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											<span className="text-xs font-bold text-muted-olive group-hover:text-accent">
 												Clique para adicionar fotos
 											</span>
-											<span className="text-[10px] text-slate-400 mt-1">
+											<span className="text-xs text-slate-400 mt-1">
 												Você pode selecionar várias imagens de uma vez
 											</span>
 										</label>
@@ -1060,7 +1060,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 									)}
 
 									<div className="space-y-1.5 pt-4">
-										<label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
 											Observações da Vistoria
 										</label>
 										<textarea
@@ -1091,7 +1091,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 									<div className="bg-bg-main/50 p-4 rounded-2xl border border-border-color space-y-3">
 										<div className="flex items-center gap-2 text-accent">
 											<IdentificationCard className="w-4 h-4" />
-											<span className="text-[10px] font-black uppercase tracking-widest">
+											<span className="text-xs font-black uppercase tracking-widest">
 												1. Dados do Locatário
 											</span>
 										</div>
@@ -1133,7 +1133,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 									<div className="bg-bg-main/50 p-4 rounded-2xl border border-border-color space-y-3">
 										<div className="flex items-center gap-2 text-primary">
 											<MapTrifold className="w-4 h-4" />
-											<span className="text-[10px] font-black uppercase tracking-widest">
+											<span className="text-xs font-black uppercase tracking-widest">
 												2. Endereço de Residência
 											</span>
 										</div>
@@ -1158,7 +1158,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 									<div className="bg-bg-main/50 p-4 rounded-2xl border border-border-color space-y-4">
 										<div className="flex items-center gap-2 text-warning">
 											<Files className="w-4 h-4" />
-											<span className="text-[10px] font-black uppercase tracking-widest">
+											<span className="text-xs font-black uppercase tracking-widest">
 												3. Status da Documentação
 											</span>
 										</div>
@@ -1167,7 +1167,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											{/* Enviados */}
 											{Object.values(files).some((f) => f !== null) && (
 												<div className="space-y-2">
-													<p className="text-[9px] font-black uppercase text-accent tracking-widest ml-1">
+													<p className="text-[11px] font-black uppercase text-accent tracking-widest ml-1">
 														Enviados
 													</p>
 													<div className="flex flex-wrap gap-2">
@@ -1188,7 +1188,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 																doc.val && (
 																	<div
 																		key={doc.label}
-																		className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent/10 border border-accent/20 text-accent text-[10px] font-bold">
+																		className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent/10 border border-accent/20 text-accent text-xs font-bold">
 																		<CheckCircle
 																			weight="fill"
 																			className="w-3.5 h-3.5"
@@ -1204,7 +1204,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											{/* Pendentes */}
 											{Object.values(files).some((f) => f === null) && (
 												<div className="space-y-2">
-													<p className="text-[9px] font-black uppercase text-muted-olive tracking-widest ml-1">
+													<p className="text-[11px] font-black uppercase text-muted-olive tracking-widest ml-1">
 														Pendentes (Enviar Depois)
 													</p>
 													<div className="flex flex-wrap gap-2">
@@ -1225,7 +1225,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 																!doc.val && (
 																	<div
 																		key={doc.label}
-																		className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-bg-card border border-border-color text-muted-olive text-[10px] font-bold opacity-60">
+																		className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-bg-card border border-border-color text-muted-olive text-xs font-bold opacity-60">
 																		<X className="w-3.5 h-3.5" />
 																		{doc.label}
 																	</div>
@@ -1241,7 +1241,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 									<div className="bg-bg-main/50 p-4 rounded-2xl border border-border-color space-y-3">
 										<div className="flex items-center gap-2 text-danger">
 											<Users className="w-4 h-4" />
-											<span className="text-[10px] font-black uppercase tracking-widest">
+											<span className="text-xs font-black uppercase tracking-widest">
 												4. Referências e Família
 											</span>
 										</div>
@@ -1262,7 +1262,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											</div>
 											{(formData.spouse_name || formData.spouse_cpf) && (
 												<div className="pt-2 border-t border-border-color/50">
-													<p className="text-[9px] font-black uppercase text-muted-olive mb-1">
+													<p className="text-[11px] font-black uppercase text-muted-olive mb-1">
 														Cônjuge
 													</p>
 													<div className="grid grid-cols-2 gap-2 text-xs">
@@ -1288,7 +1288,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 									<div className="bg-primary/10 p-4 rounded-2xl border border-primary/20 space-y-3">
 										<div className="flex items-center gap-2 text-primary">
 											<Calendar className="w-4 h-4" />
-											<span className="text-[10px] font-black uppercase tracking-widest">
+											<span className="text-xs font-black uppercase tracking-widest">
 												5. Contrato e Financeiro
 											</span>
 										</div>
@@ -1302,7 +1302,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 														formData.expected_end_date,
 													).toLocaleDateString()}
 												</p>
-												<p className="text-[10px] font-bold text-primary">
+												<p className="text-xs font-bold text-primary">
 													{durationText}
 												</p>
 											</div>
@@ -1339,7 +1339,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 									<div className="bg-accent/5 p-4 rounded-2xl border border-accent/20 space-y-3">
 										<div className="flex items-center gap-2 text-accent">
 											<Camera className="w-4 h-4" />
-											<span className="text-[10px] font-black uppercase tracking-widest">
+											<span className="text-xs font-black uppercase tracking-widest">
 												6. Vistoria Inicial
 											</span>
 										</div>
@@ -1352,7 +1352,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											</p>
 											{formData.start_inspection_notes && (
 												<div>
-													<p className="text-[10px] uppercase font-black text-muted-olive tracking-widest mb-1">
+													<p className="text-xs uppercase font-black text-muted-olive tracking-widest mb-1">
 														Notas
 													</p>
 													<p className="text-xs text-main italic bg-white/50 dark:bg-slate-950/50 p-2 rounded-lg border border-border-color">
