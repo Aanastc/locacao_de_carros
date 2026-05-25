@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 import AddCarForm from '../components/AddCarForm'
 
 
-import * as XLSX from 'xlsx'
+import * as XLSX from 'xlsx-js-style'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell
 } from 'recharts'
@@ -19,6 +19,101 @@ import {
 } from '@phosphor-icons/react'
 import { format, addDays, isAfter, isBefore, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+
+const applyStylesToSheet = (ws) => {
+  // Configuração de largura das colunas
+  const colWidths = [{ wch: 2 }, { wch: 25 }, ...Array(12).fill({ wch: 15 }), { wch: 18 }]
+  ws['!cols'] = colWidths
+
+  const range = XLSX.utils.decode_range(ws['!ref'])
+  
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellAddress = { c: C, r: R }
+      const cellRef = XLSX.utils.encode_cell(cellAddress)
+      
+      // Se a célula não existe, cria uma vazia para poder estilizar a borda
+      if (!ws[cellRef]) {
+        ws[cellRef] = { v: '', t: 's' }
+      }
+      const cell = ws[cellRef]
+      
+      let style = {
+        font: { name: 'Arial', sz: 10, color: { rgb: "1F2937" } },
+        alignment: { vertical: 'center', horizontal: 'left' },
+        border: {
+          top: { style: 'thin', color: { rgb: "E5E7EB" } },
+          bottom: { style: 'thin', color: { rgb: "E5E7EB" } },
+          left: { style: 'thin', color: { rgb: "E5E7EB" } },
+          right: { style: 'thin', color: { rgb: "E5E7EB" } }
+        }
+      }
+
+      const val = cell.v
+      const strVal = String(val).toLowerCase()
+
+      // Linha 0 (Título)
+      if (R === 0) {
+        style.font = { name: 'Arial', sz: 14, bold: true, color: { rgb: "FFFFFF" } }
+        style.fill = { fgColor: { rgb: "1F2937" } } // Cinza escuro
+        style.alignment = { vertical: 'center', horizontal: 'center' }
+        if (C === 0) {
+          ws['!merges'] = ws['!merges'] || []
+          ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: range.e.c } })
+        }
+      }
+      // Cabeçalhos das tabelas (CATEGORIA, Mês, TOTAL, TOTAIS)
+      else if (R === 2 || strVal === 'receitas' || strVal === 'automóvel' || strVal === 'totais') {
+        style.font = { name: 'Arial', sz: 10, bold: true, color: { rgb: "FFFFFF" } }
+        style.fill = { fgColor: { rgb: "3B82F6" } } // Azul
+        style.alignment = { vertical: 'center', horizontal: 'center' }
+        
+        if (strVal === 'receitas' || strVal === 'automóvel') {
+            style.alignment = { vertical: 'center', horizontal: 'left' }
+        }
+      }
+      // Coluna das Categorias (Nome da Despesa/Receita)
+      else if (C === 1 && R > 2) {
+        style.font = { name: 'Arial', sz: 10, bold: true, color: { rgb: "374151" } }
+        if (strVal === 'rendimentos') style.fill = { fgColor: { rgb: "D1FAE5" } }
+        else if (strVal === 'gastos') style.fill = { fgColor: { rgb: "FEE2E2" } }
+        else if (strVal === 'saldo do mês' || strVal === 'saldo acumulado') style.fill = { fgColor: { rgb: "DBEAFE" } }
+        else style.fill = { fgColor: { rgb: "F3F4F6" } }
+      }
+      // Valores (Meses e Total)
+      else if (C > 1 && R > 2) {
+        style.alignment = { vertical: 'center', horizontal: 'right' }
+        
+        if (typeof val === 'number') {
+          cell.z = '"R$" #,##0.00' // Moeda Brasil
+        }
+        
+        // Colore fundo das linhas de totalizadores baseando no nome da linha
+        const rowCategoryCell = ws[XLSX.utils.encode_cell({ c: 1, r: R })]
+        const rowCategory = rowCategoryCell?.v?.toString().toLowerCase() || ''
+        
+        if (rowCategory === 'rendimentos') {
+          style.fill = { fgColor: { rgb: "D1FAE5" } }
+          style.font.color = { rgb: "059669" }
+          style.font.bold = true
+        } else if (rowCategory === 'gastos') {
+          style.fill = { fgColor: { rgb: "FEE2E2" } }
+          style.font.color = { rgb: "DC2626" }
+          style.font.bold = true
+        } else if (rowCategory === 'saldo do mês' || rowCategory === 'saldo acumulado') {
+          style.fill = { fgColor: { rgb: "DBEAFE" } }
+          style.font.color = { rgb: "2563EB" }
+          style.font.bold = true
+          if (typeof val === 'number' && val < 0) {
+            style.font.color = { rgb: "DC2626" }
+          }
+        }
+      }
+
+      cell.s = style
+    }
+  }
+}
 
 
 export default function Dashboard() {
@@ -282,11 +377,11 @@ export default function Dashboard() {
     const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
     const year = selectedYear
     
-    const incomeCategories = ['Aluguel', 'Calção', 'Juros de investimentos', 'Outros']
-    const expenseCategories = [
-      'Prestação', 'Pneu', 'Bateria', 'Funilaria', 'Mecânico', 
-      'Oleo', 'Seguro carro', 'IPVA/LICENC/Vistoria', 'Ar-condicionado', 'Multa', 'Outros'
-    ]
+    // Receitas baseadas na regra de negócio atual (Aluguel vs Calção)
+    const incomeCategories = ['Aluguel', 'Calção']
+    
+    // Despesas geradas dinamicamente com base no que o usuário tem cadastrado no banco
+    const expenseCategories = Array.from(new Set((expenses || []).map(e => e.expense_type))).filter(Boolean).sort()
 
     const matrix = []
     matrix.push([`${title} - ${year}`])
@@ -401,17 +496,36 @@ export default function Dashboard() {
     // 1. Resumo Geral
     const matrixGeneral = createMatrix(null, 'RESUMO GERAL')
     const wsGeneral = XLSX.utils.aoa_to_sheet(matrixGeneral)
+    applyStylesToSheet(wsGeneral)
     XLSX.utils.book_append_sheet(wb, wsGeneral, 'Resumo Geral')
     
     // 2. Abas por Carro
+    const usedNames = new Set(['resumo geral'])
+
     cars.forEach(car => {
-      const matrixCar = createMatrix(car, `${car.brand} ${car.model}`)
+      // O título dentro da aba continua sendo a marca e o modelo
+      const matrixCar = createMatrix(car, `${car.brand} ${car.model} - ${car.license_plate?.toUpperCase()}`)
       const wsCar = XLSX.utils.aoa_to_sheet(matrixCar)
-      const sheetName = `${car.brand} ${car.model}`.substring(0, 31)
+      applyStylesToSheet(wsCar)
+      
+      // O nome da aba passa a ser a placa (ou marca/modelo se estiver sem placa por algum motivo)
+      let baseName = car.license_plate ? car.license_plate.toUpperCase() : `${car.brand} ${car.model}`
+      let sheetName = baseName.substring(0, 31)
+      
+      // Prevenção extra de segurança contra erros do Excel
+      let counter = 1
+      while (usedNames.has(sheetName.toLowerCase())) {
+        counter++
+        const suffix = ` (${counter})`
+        sheetName = baseName.substring(0, 31 - suffix.length) + suffix
+      }
+      
+      usedNames.add(sheetName.toLowerCase())
       XLSX.utils.book_append_sheet(wb, wsCar, sheetName)
     })
 
     XLSX.writeFile(wb, `PLANO_ANUAL_${selectedYear}.xlsx`)
+    setIsExportDropdownOpen(false)
   }
 
   const handleSignOut = async () => {

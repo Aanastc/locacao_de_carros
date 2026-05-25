@@ -27,7 +27,7 @@ import {
 	ArrowDownRight,
 } from "@phosphor-icons/react";
 
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import RentCarModal from "../components/RentCarModal";
 import FinishRentModal from "../components/FinishRentModal";
 import ExpenseModal from "../components/ExpenseModal";
