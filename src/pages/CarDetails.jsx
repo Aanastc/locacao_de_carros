@@ -38,7 +38,9 @@ import EditCarModal from "../components/EditCarModal";
 import EditRentModal from "../components/EditRentModal";
 import RentDetailsModal from "../components/RentDetailsModal";
 import AddKmModal from "../components/AddKmModal";
-import { PencilSimple, Camera, Envelope } from "@phosphor-icons/react";
+import InsuranceModal from "../components/InsuranceModal";
+import IncidentModal from "../components/IncidentModal";
+import { PencilSimple, Camera, Envelope, X, WarningOctagon } from "@phosphor-icons/react";
 
 export default function CarDetails() {
 	const { plate } = useParams();
@@ -61,6 +63,9 @@ export default function CarDetails() {
 	const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
 
 	const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+	const [isInsuranceModalOpen, setIsInsuranceModalOpen] = useState(false);
+	const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
+	const [showInsuranceAlert, setShowInsuranceAlert] = useState(false);
 	const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
 	const [isEditCarModalOpen, setIsEditCarModalOpen] = useState(false);
 	const [isEditRentModalOpen, setIsEditRentModalOpen] = useState(false);
@@ -234,8 +239,14 @@ export default function CarDetails() {
 			console.error("Erro ao buscar detalhes do carro:", error);
 			navigate("/dashboard");
 		} finally {
-			setLoading(false);
-		}
+				setLoading(false);
+
+				// Lógica de Alerta de Seguro
+				const hasInsuranceExpense = expData.some(e => e.expense_type === 'Seguro');
+				if (hasInsuranceExpense && !localStorage.getItem('seen_insurance_popup')) {
+					setShowInsuranceAlert(true);
+				}
+			}
 	};
 
 	useEffect(() => {
@@ -368,7 +379,7 @@ export default function CarDetails() {
 		const ws = XLSX.utils.aoa_to_sheet(matrix);
 		
 		// Aplica cores e bordas!
-		applyStylesToSheet(ws);
+		// applyStylesToSheet(ws);
 
 		const wb = XLSX.utils.book_new();
 		XLSX.utils.book_append_sheet(wb, ws, car.license_plate ? car.license_plate.toUpperCase() : "Plano Anual");
@@ -442,11 +453,11 @@ export default function CarDetails() {
 	return (
 		<div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 			{/* Cabeçalho da Página e Ações Rápidas integradas */}
-			<div className="flex flex-col md:flex-row md:items-end justify-between gap-6 glass p-6 rounded-3xl border border-border-color shadow-sm">
-				<div>
+			<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+				<div className="w-full md:w-auto">
 					<Link
 						to="/dashboard"
-						className="inline-flex items-center gap-2 text-muted-olive hover:text-primary transition-colors mb-2 text-sm font-bold group">
+						className="inline-flex items-center gap-2 text-muted-olive hover:text-main text-sm font-black uppercase tracking-widest transition-colors mb-2 group">
 						<ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
 						Voltar ao Dashboard
 					</Link>
@@ -480,6 +491,12 @@ export default function CarDetails() {
 					</button>
 
 					<button
+						onClick={() => setIsInsuranceModalOpen(true)}
+						className="bg-accent hover:opacity-90 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20 w-full sm:w-auto">
+						<ShieldCheck className="w-5 h-5" /> Cadastrar Seguro
+					</button>
+
+					<button
 						onClick={handleExportAnnual}
 						className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-main px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 border border-border-color/50 w-full sm:w-auto shadow-sm">
 						<DownloadSimple className="w-5 h-5" />
@@ -487,6 +504,35 @@ export default function CarDetails() {
 					</button>
 				</div>
 			</div>
+
+			{showInsuranceAlert && (
+				<div className="bg-accent/10 border border-accent/20 p-5 rounded-3xl mb-8 flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-top-4">
+					<div className="p-3 bg-accent/20 rounded-2xl text-accent hidden sm:block">
+						<ShieldCheck className="w-6 h-6" />
+					</div>
+					<div className="flex-1">
+						<h3 className="text-lg font-black text-main flex items-center gap-2 mb-1">
+							<ShieldCheck className="w-5 h-5 text-accent sm:hidden" /> Novo Módulo de Seguros!
+						</h3>
+						<p className="text-sm font-medium text-muted-olive leading-relaxed mb-3">
+							Notamos que você já possui lançamentos de "Seguro". Centralizamos isso! Use o botão <strong className="text-accent">Cadastrar Seguro</strong> ali em cima. 
+							A partir de agora, os seguros ganham um card próprio abaixo do contrato, permitindo que você atrele os **Sinistros** diretamente à apólice ou desconte do caução.
+						</p>
+						<button onClick={() => {
+							setShowInsuranceAlert(false);
+							localStorage.setItem('seen_insurance_popup', 'true');
+						}} className="text-xs font-black uppercase tracking-widest text-accent hover:text-main transition-colors">
+							Ok, entendi!
+						</button>
+					</div>
+					<button onClick={() => {
+						setShowInsuranceAlert(false);
+						localStorage.setItem('seen_insurance_popup', 'true');
+					}} className="text-muted-olive hover:text-main transition-colors p-1">
+						<X className="w-5 h-5" />
+					</button>
+				</div>
+			)}
 
 			{/* Indicadores de Desempenho (KPIs) */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -848,6 +894,48 @@ export default function CarDetails() {
 						</div>
 					)}
 
+					{/* Card de Seguro (Mova para cá preenchendo o espaço) */}
+					{(() => {
+						const insuranceExpenses = expenses.filter(e => e.expense_type === 'Seguro')
+						const totalInsurance = insuranceExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0)
+						const lastInsurance = [...insuranceExpenses].sort((a,b) => new Date(b.expense_date) - new Date(a.expense_date))[0]
+
+						if (totalInsurance === 0) return null;
+
+						return (
+							<div className="glass rounded-2xl p-6 border border-border-color shadow-sm mt-8">
+								<div className="flex justify-between items-center mb-6">
+									<h3 className="text-lg font-semibold flex items-center gap-2">
+										<ShieldCheck className="w-5 h-5 text-accent" />
+										Seguro do Veículo
+									</h3>
+									<button
+										onClick={() => setIsIncidentModalOpen(true)}
+										className="p-1.5 px-3 rounded-lg bg-danger/10 hover:bg-danger/20 text-danger transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest border border-danger/20">
+										<WarningOctagon className="w-3 h-3"/> Registrar Sinistro
+									</button>
+								</div>
+								
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-accent/5 p-4 rounded-2xl border border-accent/10">
+									<div>
+										<p className="text-[10px] uppercase font-black tracking-widest text-muted-olive mb-1">Gasto Total com Seguro</p>
+										<p className="font-bold text-main text-lg">R$ {totalInsurance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+									</div>
+									<div>
+										<p className="text-[10px] uppercase font-black tracking-widest text-muted-olive mb-1">Último Lançamento</p>
+										{lastInsurance ? (
+											<div>
+												<p className="font-bold text-main text-sm line-clamp-1">{lastInsurance.description}</p>
+												<p className="text-xs text-muted-olive">em {new Date(lastInsurance.expense_date + 'T00:00:00').toLocaleDateString('pt-BR')} (R$ {parseFloat(lastInsurance.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })})</p>
+											</div>
+										) : (
+											<p className="text-sm text-muted-olive italic mt-1">Nenhum seguro registrado</p>
+										)}
+									</div>
+								</div>
+							</div>
+						)
+					})()}
 
 				</div>
 			</div>
@@ -1196,6 +1284,23 @@ export default function CarDetails() {
 						setIsExpenseModalOpen(false);
 						setEditingExpense(null);
 					}}
+					onSuccess={fetchData}
+				/>
+			)}
+
+			{isInsuranceModalOpen && (
+				<InsuranceModal
+					car={car}
+					onClose={() => setIsInsuranceModalOpen(false)}
+					onSuccess={fetchData}
+				/>
+			)}
+
+			{isIncidentModalOpen && (
+				<IncidentModal
+					car={car}
+					activeRental={activeRental}
+					onClose={() => setIsIncidentModalOpen(false)}
 					onSuccess={fetchData}
 				/>
 			)}

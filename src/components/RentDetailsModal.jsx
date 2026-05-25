@@ -1,7 +1,50 @@
-import { X, User, Phone, IdentificationCard, Calendar, Car, CurrencyDollar, CheckCircle, FileText, Camera } from '@phosphor-icons/react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import { X, User, Phone, IdentificationCard, Calendar, Car, CurrencyDollar, CheckCircle, FileText, Camera, WarningOctagon, Trash, CircleNotch } from '@phosphor-icons/react'
 
 export default function RentDetailsModal({ rental, onClose }) {
+  const [incidents, setIncidents] = useState([])
+  const [loadingIncidents, setLoadingIncidents] = useState(true)
+  const [deletingIncidentId, setDeletingIncidentId] = useState(null)
+
+  const fetchIncidents = async () => {
+    if (!rental) return
+    setLoadingIncidents(true)
+    const { data, error } = await supabase
+      .from('incidents')
+      .select('*')
+      .eq('rental_id', rental.id)
+      .order('incident_date', { ascending: false })
+    
+    if (error) {
+      if (error.code !== '42P01') {
+        console.error("Erro ao buscar sinistros:", error)
+      }
+      setIncidents([])
+    } else {
+      setIncidents(data || [])
+    }
+    setLoadingIncidents(false)
+  }
+
+  useEffect(() => {
+    fetchIncidents()
+  }, [rental])
+
+  const handleDeleteIncident = async (id) => {
+    setDeletingIncidentId(id)
+    const { error } = await supabase.from('incidents').delete().eq('id', id)
+    if (!error) {
+      fetchIncidents()
+    }
+    setDeletingIncidentId(null)
+  }
+
   if (!rental) return null
+
+  const totalIncidentsValue = incidents.reduce((acc, curr) => acc + Number(curr.amount), 0)
+  const deposit = Number(rental.security_deposit || 0)
+  const remainingDeposit = deposit - totalIncidentsValue
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -110,8 +153,8 @@ export default function RentDetailsModal({ rental, onClose }) {
                 <p className="font-bold text-main">{rental.rental_model}</p>
               </div>
               <div>
-                <p className="text-[10px] uppercase font-black tracking-widest text-muted-olive mb-1">Caução</p>
-                <p className="font-bold text-main">R$ {rental.security_deposit || '0,00'}</p>
+                <p className="text-[10px] uppercase font-black tracking-widest text-muted-olive mb-1">Caução Recebido</p>
+                <p className="font-bold text-main">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(deposit)}</p>
               </div>
               <div>
                 <p className="text-[10px] uppercase font-black tracking-widest text-muted-olive mb-1">Status</p>
@@ -120,8 +163,28 @@ export default function RentDetailsModal({ rental, onClose }) {
                 </span>
               </div>
               <div className="sm:col-span-3 pt-3 border-t border-border-color flex justify-between items-center mt-2">
-                <p className="text-sm font-black uppercase tracking-widest text-muted-olive">Total Acordado</p>
+                <p className="text-sm font-black uppercase tracking-widest text-muted-olive">Total do Aluguel</p>
                 <p className="text-2xl font-black text-primary">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(rental.total_price)}</p>
+              </div>
+
+              {/* Lógica do Caução vs Sinistros */}
+              <div className="sm:col-span-3 pt-3 border-t border-border-color mt-2 space-y-3">
+                <div className="flex justify-between items-center text-sm font-bold text-muted-olive">
+                  <span>Caução:</span>
+                  <span>R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(deposit)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm font-bold text-danger">
+                  <span>(-) Sinistros e Avarias:</span>
+                  <span>R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(totalIncidentsValue)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-border-color/50">
+                  <span className={`text-sm font-black uppercase tracking-widest ${remainingDeposit >= 0 ? 'text-primary' : 'text-danger'}`}>
+                    {remainingDeposit >= 0 ? 'Caução a Devolver' : 'Dívida do Locatário'}
+                  </span>
+                  <span className={`text-2xl font-black ${remainingDeposit >= 0 ? 'text-primary' : 'text-danger'}`}>
+                    R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(Math.abs(remainingDeposit))}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -176,6 +239,46 @@ export default function RentDetailsModal({ rental, onClose }) {
               </div>
             </div>
           )}
+
+          {/* Sinistros e Avarias */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-black uppercase tracking-widest text-danger flex items-center gap-2">
+                <WarningOctagon className="w-4 h-4" /> Sinistros Descontados do Caução
+              </h3>
+            </div>
+
+            <div className="bg-danger/5 p-4 rounded-2xl border border-danger/20">
+              {loadingIncidents ? (
+                 <div className="flex justify-center p-4"><CircleNotch className="w-6 h-6 animate-spin text-danger" /></div>
+              ) : incidents.length === 0 ? (
+                <p className="text-xs text-muted-olive italic text-center">Nenhum sinistro registrado neste contrato.</p>
+              ) : (
+                <div className="space-y-3">
+                  {incidents.map(inc => (
+                    <div key={inc.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-xl border border-danger/10 gap-2">
+                      <div>
+                        <p className="text-[10px] uppercase font-black text-danger tracking-widest">{new Date(inc.incident_date + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
+                        <p className="text-sm font-bold text-main">{inc.description}</p>
+                      </div>
+                      <div className="flex items-center justify-between sm:justify-end gap-4">
+                        <span className="text-base font-black text-danger whitespace-nowrap">
+                          R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(inc.amount)}
+                        </span>
+                        <button 
+                          onClick={() => handleDeleteIncident(inc.id)}
+                          disabled={deletingIncidentId === inc.id}
+                          className="p-2 bg-danger/10 text-danger rounded-lg hover:bg-danger/20 transition-colors disabled:opacity-50"
+                        >
+                          {deletingIncidentId === inc.id ? <CircleNotch className="w-4 h-4 animate-spin" /> : <Trash className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
         </div>
 
