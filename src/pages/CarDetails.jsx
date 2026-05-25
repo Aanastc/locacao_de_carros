@@ -28,6 +28,7 @@ import {
 } from "@phosphor-icons/react";
 
 import * as XLSX from "xlsx-js-style";
+import { applyStylesToSheet } from "../utils/excel";
 import RentCarModal from "../components/RentCarModal";
 import FinishRentModal from "../components/FinishRentModal";
 import ExpenseModal from "../components/ExpenseModal";
@@ -58,6 +59,7 @@ export default function CarDetails() {
 	// Modals state
 	const [isRentModalOpen, setIsRentModalOpen] = useState(false);
 	const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
+
 	const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
 	const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
 	const [isEditCarModalOpen, setIsEditCarModalOpen] = useState(false);
@@ -257,25 +259,9 @@ export default function CarDetails() {
 		];
 		const year = new Date().getFullYear();
 
-		const incomeCategories = [
-			"Aluguel",
-			"Calção",
-			"Juros de investimentos",
-			"Outros",
-		];
-		const expenseCategories = [
-			"Prestação",
-			"Pneu",
-			"Bateria",
-			"Funilaria",
-			"Mecânico",
-			"Oleo",
-			"Seguro carro",
-			"IPVA/LICENC/Vistoria",
-			"Ar-condicionado",
-			"Multa",
-			"Outros",
-		];
+		// Categorias Dinâmicas iguais ao Dashboard
+		const incomeCategories = ["Aluguel", "Calção"];
+		const expenseCategories = Array.from(new Set((expenses || []).map(e => e.expense_type))).filter(Boolean).sort();
 
 		const matrix = [];
 		matrix.push([`PLANO ANUAL - ${car.brand} ${car.model} (${year})`]);
@@ -380,8 +366,12 @@ export default function CarDetails() {
 		matrix.push(acumuladoRow);
 
 		const ws = XLSX.utils.aoa_to_sheet(matrix);
+		
+		// Aplica cores e bordas!
+		applyStylesToSheet(ws);
+
 		const wb = XLSX.utils.book_new();
-		XLSX.utils.book_append_sheet(wb, ws, "Plano Anual");
+		XLSX.utils.book_append_sheet(wb, ws, car.license_plate ? car.license_plate.toUpperCase() : "Plano Anual");
 		XLSX.writeFile(wb, `PLANO_ANUAL_${car.brand}_${car.model}_${year}.xlsx`);
 	};
 
@@ -432,6 +422,13 @@ export default function CarDetails() {
 		return history.sort((a, b) => new Date(b.date) - new Date(a.date));
 	}, [activeRental, rentalsHistory, kmLogs]);
 
+	const realCurrentKm = useMemo(() => {
+		const baseKm = car?.current_km || 0;
+		if (!kmHistory || kmHistory.length === 0) return baseKm;
+		const maxHistoryKm = Math.max(...kmHistory.map(h => h.km || 0));
+		return Math.max(baseKm, maxHistoryKm);
+	}, [car?.current_km, kmHistory]);
+
 	if (loading) {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
@@ -444,8 +441,8 @@ export default function CarDetails() {
 
 	return (
 		<div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-			{/* Cabeçalho da Página */}
-			<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+			{/* Cabeçalho da Página e Ações Rápidas integradas */}
+			<div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white/40 dark:bg-slate-900/40 p-6 rounded-3xl border border-border-color shadow-sm">
 				<div>
 					<Link
 						to="/dashboard"
@@ -459,6 +456,35 @@ export default function CarDetails() {
 							{car.license_plate}
 						</span>
 					</h1>
+				</div>
+
+				<div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+					{activeRental ? (
+						<button
+							onClick={() => setIsFinishModalOpen(true)}
+							className="bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 w-full sm:w-auto">
+							<CheckCircle className="w-5 h-5" /> Encerrar Aluguel
+						</button>
+					) : car.status !== "Manutenção" ? (
+						<button
+							onClick={() => setIsRentModalOpen(true)}
+							className="bg-accent hover:opacity-90 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20 w-full sm:w-auto">
+							<PlayCircle className="w-5 h-5" /> Iniciar Aluguel
+						</button>
+					) : null}
+
+					<button
+						onClick={() => setIsExpenseModalOpen(true)}
+						className="bg-danger hover:bg-danger-hover text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-danger/20 w-full sm:w-auto">
+						<CurrencyDollar className="w-5 h-5" /> Lançar Despesa
+					</button>
+
+					<button
+						onClick={handleExportAnnual}
+						className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-main px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 border border-border-color/50 w-full sm:w-auto shadow-sm">
+						<DownloadSimple className="w-5 h-5" />
+						Exportar
+					</button>
 				</div>
 			</div>
 
@@ -516,46 +542,13 @@ export default function CarDetails() {
 						Quilometragem
 					</p>
 					<p className="text-3xl font-black text-main">
-						{car.current_km?.toLocaleString() || "0"}{" "}
+						{realCurrentKm.toLocaleString("pt-BR")}{" "}
 						<span className="text-xs font-medium text-muted-olive">km</span>
 					</p>
 					<div className="flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-lg bg-accent/10 text-[10px] text-accent font-bold w-max">
 						<MapPin className="w-3.5 h-3.5" /> Rodagem Atual
 					</div>
 				</div>
-			</div>
-
-			{/* Painel de Ações Rápidas */}
-			<div className="flex flex-col sm:flex-row sm:flex-wrap items-center justify-between gap-4 bg-white/40 dark:bg-slate-900/40 p-5 rounded-3xl border border-border-color/50 shadow-sm">
-				<div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-					{activeRental ? (
-						<button
-							onClick={() => setIsFinishModalOpen(true)}
-							className="bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 w-full sm:w-auto">
-							<CheckCircle className="w-5 h-5" /> Encerrar Aluguel
-						</button>
-					) : car.status !== "Manutenção" ? (
-						<button
-							onClick={() => setIsRentModalOpen(true)}
-							className="bg-accent hover:opacity-90 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20 w-full sm:w-auto">
-							<PlayCircle className="w-5 h-5" /> Iniciar Aluguel
-						</button>
-					) : null}
-
-					<button
-						onClick={() => setIsExpenseModalOpen(true)}
-						className="bg-danger hover:bg-danger-hover text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-danger/20 w-full sm:w-auto">
-						<CurrencyDollar className="w-5 h-5" /> Lançar Despesa
-					</button>
-				</div>
-
-				{/* Botão de Exportar Simplificado */}
-				<button
-					onClick={handleExportAnnual}
-					className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-main px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 border border-border-color/50 w-full sm:w-auto shadow-sm">
-					<DownloadSimple className="w-5 h-5" />
-					Baixar Relatório
-				</button>
 			</div>
 
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -783,30 +776,43 @@ export default function CarDetails() {
 										const rentStart = new Date(activeRental.start_date);
 										const rentEnd = new Date(activeRental.expected_end_date);
 										const today = new Date();
-										const totalWeeks = Math.max(1, Math.ceil((rentEnd - rentStart) / (7 * 24 * 60 * 60 * 1000)));
-										const currentWeekRaw = Math.ceil((today - rentStart) / (7 * 24 * 60 * 60 * 1000));
-										const currentWeek = Math.max(1, Math.min(currentWeekRaw, totalWeeks));
-										
+                                        
+                                        const totalDays = Math.max(1, Math.ceil((rentEnd - rentStart) / (1000 * 60 * 60 * 24)));
+                                        const currentDays = Math.max(0, Math.ceil((today - rentStart) / (1000 * 60 * 60 * 24)));
+                                        const progressPercent = Math.min(100, Math.max(0, (currentDays / totalDays) * 100));
+
 										return (
-											<div className="bg-white/40 dark:bg-slate-950/40 p-4 rounded-xl border border-border-color space-y-3">
+											<div className="bg-white/60 dark:bg-slate-900/60 p-5 rounded-2xl border border-border-color shadow-sm space-y-4">
 												<div className="flex justify-between items-center">
 													<div>
-														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Início</p>
-														<p className="font-black text-main">{rentStart.toLocaleDateString("pt-BR")}</p>
+														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Início do Contrato</p>
+														<p className="font-black text-main">{rentStart.toLocaleDateString("pt-BR", { timeZone: "UTC" })}</p>
 													</div>
 													<div className="text-right">
-														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Devolução</p>
-														<p className="font-black text-main">{rentEnd.toLocaleDateString("pt-BR")}</p>
+														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Devolução Prevista</p>
+														<p className="font-black text-main">{rentEnd.toLocaleDateString("pt-BR", { timeZone: "UTC" })}</p>
 													</div>
 												</div>
+                                                
+                                                <div className="space-y-1.5">
+                                                    <div className="flex justify-between text-[10px] font-bold text-muted-olive uppercase">
+                                                        <span>Progresso do Aluguel</span>
+                                                        <span>{Math.floor(progressPercent)}% concluído</span>
+                                                    </div>
+                                                    <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                                                        <div className="bg-primary h-2 rounded-full transition-all duration-1000" style={{ width: `${progressPercent}%` }}></div>
+                                                    </div>
+                                                    <p className="text-right text-[10px] font-bold text-muted-olive">Restam {Math.max(0, totalDays - currentDays)} dias</p>
+                                                </div>
+
 												<div className="pt-3 border-t border-border-color/50 flex justify-between items-center">
 													<div>
-														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Andamento</p>
-														<p className="font-black text-accent">Semana {currentWeek} de {totalWeeks}</p>
+														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Status</p>
+														<p className="font-black text-accent">Em Andamento</p>
 													</div>
 													<div className="text-right">
-														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Total Acordado</p>
-														<p className="font-black text-primary">R$ {Number(activeRental.total_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Valor Total</p>
+														<p className="font-black text-primary text-lg">R$ {Number(activeRental.total_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
 													</div>
 												</div>
 											</div>
@@ -833,27 +839,31 @@ export default function CarDetails() {
 						</div>
 					)}
 
+
+				</div>
+			</div>
+
 					{/* Abas de Fluxo Financeiro Detalhado */}
-					<div className="glass rounded-2xl border border-border-color shadow-sm overflow-hidden">
-						<div className="flex border-b border-border-color bg-bg-main/50">
+					<div className="bg-white/40 dark:bg-slate-900/40 rounded-3xl p-6 border border-border-color shadow-sm">
+                        <div className="flex flex-col sm:flex-row bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl mb-6 gap-1">
 							<button
 								onClick={() => setActiveFinanceTab("cronograma")}
-								className={`flex-1 py-4 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeFinanceTab === "cronograma" ? "bg-bg-card text-accent border-b-2 border-accent" : "text-muted-olive hover:text-accent"}`}>
+								className={`flex-1 py-3 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 rounded-xl ${activeFinanceTab === "cronograma" ? "bg-white dark:bg-slate-700 text-accent shadow-sm" : "text-muted-olive hover:text-accent hover:bg-white/50"}`}>
 								<Calendar className="w-4 h-4" /> Cronograma
 							</button>
 							<button
 								onClick={() => setActiveFinanceTab("gastos")}
-								className={`flex-1 py-4 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeFinanceTab === "gastos" ? "bg-bg-card text-danger border-b-2 border-danger" : "text-muted-olive hover:text-danger"}`}>
+								className={`flex-1 py-3 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 rounded-xl ${activeFinanceTab === "gastos" ? "bg-white dark:bg-slate-700 text-danger shadow-sm" : "text-muted-olive hover:text-danger hover:bg-white/50"}`}>
 								<Wrench className="w-4 h-4" /> Gastos
 							</button>
 							<button
 								onClick={() => setActiveFinanceTab("receitas")}
-								className={`flex-1 py-4 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeFinanceTab === "receitas" ? "bg-bg-card text-primary border-b-2 border-primary" : "text-muted-olive hover:text-primary"}`}>
+								className={`flex-1 py-3 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 rounded-xl ${activeFinanceTab === "receitas" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-muted-olive hover:text-primary hover:bg-white/50"}`}>
 								<CurrencyDollar className="w-4 h-4" /> Receitas
 							</button>
 						</div>
 
-						<div className="p-0">
+						<div className="p-0 bg-white/60 dark:bg-slate-950/40 rounded-2xl overflow-hidden border border-border-color/50">
 							{activeFinanceTab === "cronograma" ? (
 								<div className="overflow-x-auto">
 									<table className="w-full text-left">
@@ -1018,7 +1028,7 @@ export default function CarDetails() {
 																minimumFractionDigits: 2,
 															})}
 														</td>
-														<td className="py-4 px-6 text-xs text-muted-olive max-w-[150px] truncate">
+														<td className="py-4 px-6 text-xs text-muted-olive max-w-[200px] sm:max-w-xs break-words whitespace-normal leading-relaxed">
 															{exp.description || "-"}
 														</td>
 														<td className="py-4 px-6 text-right">
@@ -1043,14 +1053,15 @@ export default function CarDetails() {
 												<th className="py-3 px-6">Data</th>
 												<th className="py-3 px-6">Método</th>
 												<th className="py-3 px-6">Valor</th>
-												<th className="py-3 px-6">Ação</th>
+												<th className="py-3 px-6">Nota</th>
+												<th className="py-3 px-6 text-right">Ação</th>
 											</tr>
 										</thead>
 										<tbody className="text-sm">
 											{incomes.length === 0 ? (
 												<tr>
 													<td
-														colSpan="4"
+														colSpan="5"
 														className="py-8 text-center italic text-muted-olive">
 														Nenhuma receita registrada.
 													</td>
@@ -1075,11 +1086,15 @@ export default function CarDetails() {
 																minimumFractionDigits: 2,
 															})}
 														</td>
-														<td className="py-4 px-6">
+														<td className="py-4 px-6 text-xs text-muted-olive max-w-[200px] sm:max-w-xs break-words whitespace-normal leading-relaxed">
+															{inc.notes || "-"}
+														</td>
+														<td className="py-4 px-6 text-right">
 															<button
 																onClick={() => setEditingIncome(inc)}
-																className="text-[10px] font-black uppercase text-accent hover:underline">
-																Editar
+																className="p-2 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors shadow-sm border border-accent/10"
+																title="Editar Receita">
+																<PencilSimple className="w-4 h-4" />
 															</button>
 														</td>
 													</tr>
@@ -1091,7 +1106,6 @@ export default function CarDetails() {
 							)}
 						</div>
 					</div>
-
 					{/* Histórico de Aluguéis */}
 					<div className="glass rounded-2xl p-6 border border-border-color shadow-sm">
 						<h3 className="text-lg font-black mb-6 flex items-center gap-2 text-main">
@@ -1146,84 +1160,6 @@ export default function CarDetails() {
 							</div>
 						)}
 					</div>
-				</div>
-			</div>
-
-			{/* Tabela de Despesas Detalhada */}
-			<div className="glass rounded-2xl p-6 border border-border-color shadow-sm">
-				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-					<h3 className="text-xl font-black flex items-center gap-2 text-main">
-						<Wrench className="w-6 h-6 text-danger" />
-						Histórico Completo de Gastos
-					</h3>
-					<div className="bg-danger/10 px-4 py-2 rounded-xl border border-danger/20">
-						<span className="text-[10px] font-black uppercase tracking-widest text-danger block mb-0.5">
-							Soma de Lançamentos
-						</span>
-						<span className="text-lg font-black text-danger">
-							R${" "}
-							{expenses
-								.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
-								.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-						</span>
-					</div>
-				</div>
-
-				{expenses.length === 0 ? (
-					<p className="text-sm text-muted-olive py-12 text-center italic font-medium">
-						Este veículo ainda não possui despesas registradas.
-					</p>
-				) : (
-					<div className="overflow-x-auto">
-						<table className="w-full text-left border-collapse">
-							<thead>
-								<tr className="border-b border-border-color text-[10px] uppercase font-black tracking-widest text-muted-olive">
-									<th className="pb-3 px-4">Data</th>
-									<th className="pb-3 px-4">Categoria</th>
-									<th className="pb-3 px-4">Valor</th>
-									<th className="pb-3 px-4">Nota</th>
-									<th className="pb-3 px-4 text-right">Ação</th>
-								</tr>
-							</thead>
-							<tbody className="text-sm">
-								{expenses.map((exp) => (
-									<tr
-										key={exp.id}
-										className="border-b border-border-color last:border-0 hover:bg-danger/5 transition-colors">
-										<td className="py-4 px-4 font-bold text-main">
-											{new Date(exp.expense_date).toLocaleDateString("pt-BR", {
-												timeZone: "UTC",
-											})}
-										</td>
-										<td className="py-4 px-4">
-											<span className="px-2.5 py-1 rounded-lg bg-danger/10 text-danger text-[10px] font-black uppercase tracking-wider border border-danger/10">
-												{exp.expense_type}
-											</span>
-										</td>
-										<td className="py-4 px-4 font-black text-danger text-base">
-											R${" "}
-											{Number(exp.amount).toLocaleString("pt-BR", {
-												minimumFractionDigits: 2,
-											})}
-										</td>
-										<td className="py-4 px-4 text-muted-olive text-xs leading-relaxed max-w-xs truncate hover:whitespace-normal transition-all">
-											{exp.description || "-"}
-										</td>
-										<td className="py-4 px-4 text-right">
-											<button
-												onClick={() => setEditingExpense(exp)}
-												className="p-2 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors shadow-sm border border-accent/10"
-												title="Editar Despesa">
-												<PencilSimple className="w-4 h-4" />
-											</button>
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-				)}
-			</div>
 
 			{/* Modals */}
 			{isRentModalOpen && (
