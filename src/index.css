@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 @theme {
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
@@ -14,11 +16,15 @@
   --color-brand-hover: var(--brand-hover);
   --color-base: var(--base-brown);
   --color-muted-olive: var(--text-muted);
+  --color-bg-main: var(--bg-main);
+  --color-bg-card: var(--bg-card);
+  --color-text-main: var(--text-main);
+  --color-border-color: var(--border-color);
 }
 
 @layer base {
   :root {
-    /* MODO CLARO - Structured UI Palette (Modern & Premium) */
+    /* MODO CLARO - Slate / Indigo / Emerald */
     --bg-main: #F8FAFC;
     --bg-card: #FFFFFF;
     --text-main: #0F172A;
@@ -26,8 +32,8 @@
     --border-color: #E2E8F0;
     
     /* Functional Colors */
-    --primary: #2563EB;        /* Blue 600 */
-    --primary-hover: #1D4ED8;  /* Blue 700 */
+    --primary: #4F46E5;        /* Indigo 600 */
+    --primary-hover: #4338CA;  /* Indigo 700 */
     --success: #10B981;        /* Emerald 500 */
     --success-hover: #059669;  /* Emerald 600 */
     --success-soft: #D1FAE5;   
@@ -36,52 +42,55 @@
     --danger-hover: #DC2626;   /* Red 600 */
     --danger-soft: #FEE2E2;    
     
-    --brand: #6366F1;          /* Indigo 500 */
-    --brand-hover: #4F46E5;    /* Indigo 600 */
+    --brand: #4F46E5;          /* Indigo 600 */
+    --brand-hover: #4338CA;    /* Indigo 700 */
     --brand-soft: #E0E7FF;     
     
-    --base-brown: #334155;     /* Slate 700 (Kept variable name for compatibility) */
+    --base-brown: #334155;     /* Slate 700 */
     --base-brown-dark: #1E293B; /* Slate 800 */
     --base-brown-light: #94A3B8; /* Slate 400 */
     
     --secondary: #475569;      /* Slate 600 */
     --secondary-hover: #334155; /* Slate 700 */
-    --accent: #6366F1;
+    --accent: #4F46E5;
 
     --glass-bg: rgba(255, 255, 255, 0.75);
     --glass-border: rgba(226, 232, 240, 0.6);
   }
 
   .dark {
-    /* MODO ESCURO - Structured UI Palette */
-    --bg-main: #1F1B1A;
-    --bg-card: #2A2523;
-    --text-main: #F2EAE5;
-    --text-muted: #B8ADA7;
-    --border-color: #3A3330;
+    /* MODO ESCURO - Slate / Indigo / Emerald */
+    --bg-main: #0F172A;
+    --bg-card: #1E293B;
+    --text-main: #F8FAFC;
+    --text-muted: #94A3B8;
+    --border-color: #334155;
     
-    /* Functional Colors stay consistent, but soft bgs might need adjustment if used */
-    --primary: #3FA796;
-    --primary-hover: #2E8C7D;
-    --success: #3FA796;
-    --success-hover: #2E8C7D;
+    /* Functional Colors */
+    --primary: #6366F1;        /* Indigo 500 */
+    --primary-hover: #4F46E5;  /* Indigo 600 */
+    --success: #34D399;        /* Emerald 400 */
+    --success-hover: #10B981;  /* Emerald 500 */
+    --success-soft: #064E3B;
     
-    --danger: #E63946;
-    --danger-hover: #C92F3A;
+    --danger: #F87171;         /* Red 400 */
+    --danger-hover: #EF4444;   /* Red 500 */
+    --danger-soft: #7F1D1D;
     
-    --brand: #E8A0BF;
-    --brand-hover: #D988AA;
+    --brand: #6366F1;          /* Indigo 500 */
+    --brand-hover: #4F46E5;    /* Indigo 600 */
+    --brand-soft: #312E81;
     
-    --base-brown: #8B6F5C;
-    --base-brown-dark: #6F5747;
-    --base-brown-light: #C9B8A8;
+    --base-brown: #94A3B8;     /* Slate 400 */
+    --base-brown-dark: #64748B; /* Slate 500 */
+    --base-brown-light: #CBD5E1; /* Slate 300 */
     
-    --secondary: #8B6F5C;
-    --secondary-hover: #C9B8A8;
-    --accent: #E8A0BF;
+    --secondary: #64748B;      /* Slate 500 */
+    --secondary-hover: #94A3B8; /* Slate 400 */
+    --accent: #6366F1;
 
-    --glass-bg: rgba(42, 37, 35, 0.8);
-    --glass-border: rgba(58, 51, 48, 0.5);
+    --glass-bg: rgba(30, 41, 59, 0.85); /* Slate 800 with opacity */
+    --glass-border: rgba(51, 65, 85, 0.5); /* Slate 700 with opacity */
   }
 
   body {
@@ -105,8 +114,8 @@
   }
 
   .dark select option {
-    background-color: #2A2523;
-    color: #F2EAE5;
+    background-color: var(--bg-card);
+    color: var(--text-main);
   }
 }
 
@@ -118,8 +127,8 @@
 }
 
 @utility glass-dark {
-  background-color: rgba(31, 27, 26, 0.9);
+  background-color: var(--glass-bg);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(184, 173, 167, 0.1);
+  border: 1px solid var(--glass-border);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }

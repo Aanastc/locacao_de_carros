@@ -511,7 +511,7 @@ export default function Dashboard() {
                       onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
                       className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-main outline-none cursor-pointer py-1 pr-8"
                     >
-                      {MONTHS.map((m, i) => <option key={m} value={i + 1} className="dark:bg-slate-900">{m}</option>)}
+                      {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
                     </select>
                   )}
                   <select 
@@ -519,7 +519,7 @@ export default function Dashboard() {
                     onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                     className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-main outline-none cursor-pointer py-1 pr-8"
                   >
-                    {availableYears.map(y => <option key={y} value={y} className="dark:bg-slate-900">{y}</option>)}
+                    {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
                 </div>
               </div>
@@ -536,28 +536,28 @@ export default function Dashboard() {
 
             {/* Quick Stats - Minimalist */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              <div className="relative group p-6 bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-border-color/50">
+              <div className="relative group p-6 glass rounded-3xl border border-border-color/50">
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Gastos {filterPeriod === 'month' ? '(Mês)' : '(Ano)'}</p>
                 <h3 className="text-3xl font-black tracking-tighter text-danger">
                   <span className="text-sm font-bold mr-1">R$</span>
                   {financialStats.periodExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </h3>
               </div>
-              <div className="relative group p-6 bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-border-color/50">
+              <div className="relative group p-6 glass rounded-3xl border border-border-color/50">
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Renda {filterPeriod === 'month' ? '(Mês)' : '(Ano)'}</p>
                 <h3 className="text-3xl font-black tracking-tighter text-success">
                   <span className="text-sm font-bold mr-1">R$</span>
                   {financialStats.periodRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </h3>
               </div>
-              <div className="relative group p-6 bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-border-color/50">
+              <div className="relative group p-6 glass rounded-3xl border border-border-color/50">
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Lucro {filterPeriod === 'month' ? '(Mês)' : '(Ano)'}</p>
                 <h3 className="text-3xl font-black tracking-tighter text-primary">
                   <span className="text-sm font-bold mr-1">R$</span>
                   {financialStats.periodProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </h3>
               </div>
-              <div className="relative group p-6 bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-border-color/50">
+              <div className="relative group p-6 glass rounded-3xl border border-border-color/50">
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Pendências</p>
                 <h3 className={`text-3xl font-black tracking-tighter ${alerts.length > 0 ? 'text-orange-500' : 'text-success'}`}>
                   {alerts.length} <span className="text-xs font-bold">alertas</span>
@@ -568,7 +568,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
               {/* Financial Section */}
               <div className="lg:col-span-2 space-y-8">
-                <div className="bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] p-6 sm:p-10 border border-border-color/50">
+                <div className="glass rounded-[2.5rem] p-6 sm:p-10 border border-border-color/50">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
                     <div>
                       <h3 className="text-2xl font-black tracking-tight mb-1 text-main">Fluxo Financeiro</h3>
@@ -598,7 +598,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Fleet Summary - Extra Clean */}
-                <div className="bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] p-6 sm:p-10 border border-border-color/50">
+                <div className="glass rounded-[2.5rem] p-6 sm:p-10 border border-border-color/50">
                   <div className="flex items-center justify-between mb-8">
                     <h3 className="text-2xl font-black tracking-tight text-main">Frota</h3>
                     <Link to="/cars" className="bg-primary/10 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all flex items-center gap-2">
@@ -625,7 +625,7 @@ export default function Dashboard() {
               {/* Operations Column */}
               <div className="space-y-8">
                 {/* Alerts Section - Enhanced */}
-                <div className="bg-white/40 dark:bg-slate-900/40 rounded-[2rem] p-8 border border-border-color/50 shadow-lg shadow-black/5">
+                <div className="glass rounded-[2rem] p-8 border border-border-color/50 shadow-lg shadow-black/5">
                   <div className="flex items-center gap-3 mb-6">
                     <WarningCircle className="w-6 h-6 text-danger" weight="bold" />
                     <h3 className="text-lg font-black uppercase tracking-[0.1em] text-danger">Alertas</h3>

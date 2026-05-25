@@ -335,14 +335,14 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="bg-bg-card border border-border-color rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         
-        <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
+        <div className="flex justify-between items-center p-6 border-b border-border-color bg-slate-50/50 dark:bg-slate-950/20">
           <div>
-            <h2 className="text-xl font-black text-slate-900 dark:text-white">Editar Aluguel</h2>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{car.brand} {car.model}</p>
+            <h2 className="text-xl font-black text-main">Editar Aluguel</h2>
+            <p className="text-xs text-muted-olive font-bold uppercase tracking-widest">{car.brand} {car.model}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-accent transition-colors">
+          <button onClick={onClose} className="text-muted-olive hover:text-accent transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -557,8 +557,8 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
           </form>
         </div>
 
-        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-b-2xl flex justify-end gap-3 shadow-[0_-10px_20px_rgba(0,0,0,0.03)]">
-          <button type="button" onClick={onClose} disabled={loading} className="px-5 py-2.5 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white font-bold transition-colors">
+        <div className="p-6 border-t border-border-color bg-slate-50/50 dark:bg-slate-950/20 rounded-b-2xl flex justify-end gap-3 shadow-[0_-10px_20px_rgba(0,0,0,0.03)]">
+          <button type="button" onClick={onClose} disabled={loading} className="px-5 py-2.5 rounded-xl text-muted-olive hover:text-main font-bold transition-colors">
             Cancelar
           </button>
           <button type="submit" form="editRentForm" disabled={loading} className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-xl font-black text-sm transition-all flex items-center shadow-lg shadow-primary/20">

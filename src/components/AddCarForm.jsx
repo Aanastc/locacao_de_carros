@@ -343,9 +343,9 @@ export default function AddCarForm({ onComplete }) {
                 <div className="space-y-2 sm:col-span-2">
                   <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Forma de Pagamento *</label>
                   <select name="payment_method" value={formData.payment_method} onChange={handleChange} className="w-full bg-bg-card border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer dark:[color-scheme:dark]">
-                    <option value="A vista" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>À vista</option>
-                    <option value="Financiado" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Financiado</option>
-                    <option value="Consórcio" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Consórcio</option>
+                    <option value="A vista">À vista</option>
+                    <option value="Financiado">Financiado</option>
+                    <option value="Consórcio">Consórcio</option>
                   </select>
                 </div>
               </div>

@@ -5,14 +5,14 @@ export default function RentDetailsModal({ rental, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="bg-bg-card border border-border-color rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         
-        <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
-          <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+        <div className="flex justify-between items-center p-6 border-b border-border-color bg-slate-50/50 dark:bg-slate-950/20">
+          <h2 className="text-xl font-black text-main flex items-center gap-2">
             <FileText className="w-6 h-6 text-primary" />
             Detalhes do Contrato
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-main transition-colors">
+          <button onClick={onClose} className="text-muted-olive hover:text-main transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -179,7 +179,7 @@ export default function RentDetailsModal({ rental, onClose }) {
 
         </div>
 
-        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 flex justify-end gap-3">
+        <div className="p-6 border-t border-border-color bg-slate-50/50 dark:bg-slate-950/20 flex justify-end gap-3">
           <button type="button" onClick={onClose} className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-sm transition-colors shadow-lg shadow-primary/20">
             Fechar
           </button>

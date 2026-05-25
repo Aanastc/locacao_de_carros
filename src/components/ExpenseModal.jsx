@@ -183,11 +183,11 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
+      <div className="bg-bg-card border border-border-color rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
         
-        <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
-          <h2 className="text-xl font-black text-slate-900 dark:text-white">{expense ? 'Editar Despesa' : 'Lançar Despesa'}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-main transition-colors">
+        <div className="flex justify-between items-center p-6 border-b border-border-color bg-slate-50/50 dark:bg-slate-950/20">
+          <h2 className="text-xl font-black text-main">{expense ? 'Editar Despesa' : 'Lançar Despesa'}</h2>
+          <button onClick={onClose} className="text-muted-olive hover:text-main transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -197,8 +197,8 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
 
           <form id="expenseForm" onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipo de Despesa *</label>
-              <select name="expense_type" value={formData.expense_type} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer dark:[color-scheme:dark]">
+              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Tipo de Despesa *</label>
+              <select name="expense_type" value={formData.expense_type} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer dark:[color-scheme:dark]">
                 {categories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
@@ -209,43 +209,43 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
             {formData.expense_type === 'Troca de óleo' && (
               <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">KM Atual (Ref)</label>
-                  <div className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-500 font-bold">
+                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">KM Atual (Ref)</label>
+                  <div className="w-full bg-slate-100 dark:bg-slate-800/50 border border-border-color rounded-xl px-4 py-2.5 text-muted-olive font-bold">
                     {car.current_km?.toLocaleString() || '0'}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nova KM *</label>
-                  <input required type="number" name="oil_change_km" value={formData.oil_change_km} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none font-bold" placeholder="KM da troca" />
+                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Nova KM *</label>
+                  <input required type="number" name="oil_change_km" value={formData.oil_change_km} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold" placeholder="KM da troca" />
                 </div>
               </div>
             )}
 
             {formData.expense_type === 'Outros' && (
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Qual despesa? *</label>
-                <input required type="text" name="custom_type" value={formData.custom_type} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none" />
+                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Qual despesa? *</label>
+                <input required type="text" name="custom_type" value={formData.custom_type} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" />
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Valor (R$) *</label>
-              <input required type="text" inputMode="numeric" name="amount" value={formData.amount} onChange={handleCurrencyChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none" />
+              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Valor (R$) *</label>
+              <input required type="text" inputMode="numeric" name="amount" value={formData.amount} onChange={handleCurrencyChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Data da Despesa *</label>
-              <input required type="date" name="expense_date" value={formData.expense_date} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
+              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Data da Despesa *</label>
+              <input required type="date" name="expense_date" value={formData.expense_date} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observações (Opcional)</label>
-              <textarea name="description" value={formData.description} onChange={handleChange} rows="3" className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none resize-none font-medium" placeholder="Ex: Peças trocadas, oficina, etc..."></textarea>
+              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Observações (Opcional)</label>
+              <textarea name="description" value={formData.description} onChange={handleChange} rows="3" className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-3 text-main focus:ring-2 focus:ring-accent outline-none resize-none font-medium" placeholder="Ex: Peças trocadas, oficina, etc..."></textarea>
             </div>
           </form>
         </div>
 
-        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 flex flex-col sm:flex-row gap-3">
+        <div className="p-6 border-t border-border-color bg-slate-50/50 dark:bg-slate-950/20 flex flex-col sm:flex-row gap-3">
           {expense && !showDeleteConfirm && (
             <button 
               type="button" 
@@ -263,7 +263,7 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
               <button 
                 type="button" 
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-3 py-2 rounded-lg text-slate-500 text-xs font-bold"
+                className="px-3 py-2 rounded-lg text-muted-olive text-xs font-bold"
               >
                 Não
               </button>
@@ -278,7 +278,7 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
             </div>
           ) : (
             <>
-              <button type="button" onClick={onClose} className="flex-1 py-3 px-4 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white font-bold text-sm">
+              <button type="button" onClick={onClose} className="flex-1 py-3 px-4 rounded-xl text-muted-olive hover:text-main font-bold text-sm">
                 Cancelar
               </button>
               <button type="submit" form="expenseForm" disabled={loading} className="flex-1 py-3 px-4 rounded-xl bg-danger text-white font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-danger/20">

@@ -58,14 +58,14 @@ export default function AddKmModal({ car, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
+      <div className="bg-bg-card border border-border-color rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
         
-        <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
-          <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+        <div className="flex justify-between items-center p-6 border-b border-border-color bg-slate-50/50 dark:bg-slate-950/20">
+          <h2 className="text-xl font-black text-main flex items-center gap-2">
             <MapPin className="w-6 h-6 text-accent" />
             Lançar KM Avulso
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-main transition-colors">
+          <button onClick={onClose} className="text-muted-olive hover:text-main transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -74,22 +74,22 @@ export default function AddKmModal({ car, onClose, onSuccess }) {
           {error && <div className="bg-danger/10 text-danger p-3 rounded-lg text-sm font-medium border border-danger/20">{error}</div>}
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Quilometragem Registrada *</label>
-            <input required type="number" name="km" value={formData.km} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none font-medium" />
+            <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Quilometragem Registrada *</label>
+            <input required type="number" name="km" value={formData.km} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-medium" />
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Data e Hora *</label>
-            <input required type="datetime-local" name="date" value={formData.date} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none font-medium dark:[color-scheme:dark]" />
+            <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Data e Hora *</label>
+            <input required type="datetime-local" name="date" value={formData.date} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-medium dark:[color-scheme:dark]" />
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observações (Opcional)</label>
-            <input type="text" name="notes" value={formData.notes} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none" />
+            <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Observações (Opcional)</label>
+            <input type="text" name="notes" value={formData.notes} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" />
           </div>
 
-          <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 mt-6">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white font-bold text-sm transition-colors">
+          <div className="pt-4 flex justify-end gap-3 border-t border-border-color mt-6">
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-muted-olive hover:text-main font-bold text-sm transition-colors">
               Cancelar
             </button>
             <button type="submit" disabled={loading} className="bg-accent hover:opacity-90 text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-accent/20">

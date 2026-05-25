@@ -150,7 +150,7 @@ export default function Profile() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <CircleNotch className="w-8 h-8 text-accent animate-spin" />
-        <span className="text-slate-400 font-medium">Carregando perfil...</span>
+        <span className="text-muted-olive font-medium">Carregando perfil...</span>
       </div>
     )
   }

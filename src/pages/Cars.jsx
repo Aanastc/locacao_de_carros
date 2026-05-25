@@ -92,7 +92,7 @@ export default function Cars() {
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
-          <div className="bg-white/40 dark:bg-slate-900/40 border border-border-color rounded-2xl px-5 py-3 flex items-center gap-6">
+          <div className="glass border border-border-color rounded-2xl px-5 py-3 flex items-center gap-6">
             <div className="text-center">
               <p className="text-[10px] font-black uppercase text-muted-olive mb-1">Total</p>
               <p className="text-xl font-black">{stats.total}</p>
@@ -120,13 +120,13 @@ export default function Cars() {
           <input 
             type="text" 
             placeholder="Buscar por placa, modelo ou marca..." 
-            className="w-full bg-white/40 dark:bg-slate-900/40 border border-border-color rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+            className="w-full glass border border-border-color rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         
-        <div className="flex bg-white/40 dark:bg-slate-900/40 p-1.5 rounded-2xl border border-border-color overflow-x-auto w-full md:w-auto">
+        <div className="flex glass p-1.5 rounded-2xl border border-border-color overflow-x-auto w-full md:w-auto">
           {['Todos', 'Disponível', 'Alugado', 'Manutenção'].map(f => (
             <button
               key={f}

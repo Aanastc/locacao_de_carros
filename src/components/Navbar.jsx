@@ -98,7 +98,7 @@ export default function Navbar() {
             {/* Profile Link */}
             <Link 
               to="/profile" 
-              className={`flex items-center gap-2 text-sm transition-colors bg-white/40 dark:bg-slate-900/40 p-1 sm:py-1.5 sm:px-3 rounded-full border hover:border-primary/50 ${
+              className={`flex items-center gap-2 text-sm transition-colors glass p-1 sm:py-1.5 sm:px-3 rounded-full border hover:border-primary/50 ${
                 isActive('/profile') ? 'border-primary/50 text-primary' : 'border-border-color text-muted-olive'
               }`}
             >

@@ -38,7 +38,7 @@ import EditCarModal from "../components/EditCarModal";
 import EditRentModal from "../components/EditRentModal";
 import RentDetailsModal from "../components/RentDetailsModal";
 import AddKmModal from "../components/AddKmModal";
-import { PencilSimple, Camera } from "@phosphor-icons/react";
+import { PencilSimple, Camera, Envelope } from "@phosphor-icons/react";
 
 export default function CarDetails() {
 	const { plate } = useParams();
@@ -442,7 +442,7 @@ export default function CarDetails() {
 	return (
 		<div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 			{/* Cabeçalho da Página e Ações Rápidas integradas */}
-			<div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white/40 dark:bg-slate-900/40 p-6 rounded-3xl border border-border-color shadow-sm">
+			<div className="flex flex-col md:flex-row md:items-end justify-between gap-6 glass p-6 rounded-3xl border border-border-color shadow-sm">
 				<div>
 					<Link
 						to="/dashboard"
@@ -490,7 +490,7 @@ export default function CarDetails() {
 
 			{/* Indicadores de Desempenho (KPIs) */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-				<div className="bg-white/40 dark:bg-slate-900/40 rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
+				<div className="glass rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
 					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-2">
 						Total Faturado
 					</p>
@@ -505,7 +505,7 @@ export default function CarDetails() {
 					</div>
 				</div>
 
-				<div className="bg-white/40 dark:bg-slate-900/40 rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
+				<div className="glass rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
 					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-2">
 						Total em Gastos
 					</p>
@@ -520,7 +520,7 @@ export default function CarDetails() {
 					</div>
 				</div>
 
-				<div className="bg-white/40 dark:bg-slate-900/40 rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
+				<div className="glass rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
 					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-2">
 						Saldo Líquido
 					</p>
@@ -537,7 +537,7 @@ export default function CarDetails() {
 					</div>
 				</div>
 
-				<div className="bg-white/40 dark:bg-slate-900/40 rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
+				<div className="glass rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
 					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-2">
 						Quilometragem
 					</p>
@@ -582,10 +582,10 @@ export default function CarDetails() {
 								<span
 									className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${
 										car.status === "Disponível"
-											? "bg-accent/20 text-white border border-accent/30"
+											? "bg-accent/20 text-accent border border-accent/30"
 											: car.status === "Alugado"
-												? "bg-primary/20 text-white border border-primary/20"
-												: "bg-danger/20 text-white border border-danger/20"
+												? "bg-primary/20 text-primary border border-primary/20"
+												: "bg-danger/20 text-danger border border-danger/20"
 									}`}>
 									{car.status}
 								</span>
@@ -632,14 +632,14 @@ export default function CarDetails() {
 
 						<div className="space-y-3 max-h-64 overflow-y-auto pr-2 scrollbar-thin">
 							{kmHistory.length === 0 ? (
-								<p className="text-sm text-slate-500 text-center py-4">
+								<p className="text-sm text-muted-olive text-center py-4">
 									Nenhum registro.
 								</p>
 							) : (
 								kmHistory.map((record) => (
 									<div
 										key={record.id}
-										className="flex justify-between items-center p-3 rounded-xl bg-primary/5 border border-border-color">
+										className="flex flex-wrap justify-between items-center gap-2 p-3 rounded-xl bg-primary/5 border border-border-color">
 										<div>
 											<p className="font-bold text-main">
 												{record.km.toLocaleString()}{" "}
@@ -651,9 +651,9 @@ export default function CarDetails() {
 												{new Date(record.date).toLocaleDateString("pt-BR")}
 											</p>
 										</div>
-										<div className="text-right">
+										<div className="text-left mt-1 sm:mt-0 sm:text-right">
 											<span
-												className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md ${record.type === "start" ? "bg-primary/20 text-primary" : "bg-accent/20 text-accent"}`}>
+												className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md inline-block whitespace-nowrap ${record.type === "start" ? "bg-primary/20 text-primary" : "bg-accent/20 text-accent"}`}>
 												{record.label}
 											</span>
 										</div>
@@ -696,6 +696,15 @@ export default function CarDetails() {
 											/>{" "}
 											{activeRental.client_contact}
 										</p>
+										{activeRental.client_email && (
+											<p className="text-sm text-main flex items-center gap-2">
+												<Envelope
+													className="w-4 h-4 text-muted-olive"
+													weight="fill"
+												/>{" "}
+												{activeRental.client_email}
+											</p>
+										)}
 										<p className="text-sm text-main flex items-center gap-2">
 											<ShieldCheck
 												className="w-4 h-4 text-muted-olive"
@@ -844,7 +853,7 @@ export default function CarDetails() {
 			</div>
 
 					{/* Abas de Fluxo Financeiro Detalhado */}
-					<div className="bg-white/40 dark:bg-slate-900/40 rounded-3xl p-6 border border-border-color shadow-sm">
+					<div className="glass rounded-3xl p-6 border border-border-color shadow-sm">
                         <div className="flex flex-col sm:flex-row bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl mb-6 gap-1">
 							<button
 								onClick={() => setActiveFinanceTab("cronograma")}

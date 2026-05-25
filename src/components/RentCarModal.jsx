@@ -449,20 +449,20 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-			<div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[95vh] overflow-hidden">
-				<div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
-					<h2 className="text-xl font-black text-slate-900 dark:text-white">
+			<div className="bg-bg-card border border-border-color rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[95vh] overflow-hidden">
+				<div className="flex justify-between items-center p-6 border-b border-border-color bg-slate-50/50 dark:bg-slate-950/20">
+					<h2 className="text-xl font-black text-main">
 						Registrar Aluguel
 					</h2>
 					<button
 						onClick={onClose}
-						className="text-slate-400 hover:text-accent transition-colors">
+						className="text-muted-olive hover:text-accent transition-colors">
 						<X className="w-6 h-6" />
 					</button>
 				</div>
 
 				{/* Wizard Header */}
-				<div className="bg-slate-50/30 dark:bg-slate-900/50 px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+				<div className="bg-slate-50/30 dark:bg-slate-900/50 px-6 py-4 border-b border-border-color">
 					<div className="flex items-center justify-between w-full">
 						{STEPS.map((s, idx) => {
 							const Icon = s.icon;
@@ -483,7 +483,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 												? "bg-accent text-white shadow-lg shadow-accent/20"
 												: isCompleted
 													? "bg-accent/20 text-accent"
-													: "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400"
+													: "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-muted-olive"
 										}`}>
 										{isCompleted ? (
 											<CheckCircle weight="fill" className="w-5 h-5" />
@@ -492,7 +492,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										)}
 									</div>
 									<span
-										className={`text-[11px] font-black uppercase tracking-tighter ${isActive ? "text-accent" : "text-slate-400"}`}>
+										className={`text-[11px] font-black uppercase tracking-tighter ${isActive ? "text-accent" : "text-muted-olive"}`}>
 										{s.name}
 									</span>
 								</div>
@@ -524,7 +524,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 								</div>
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									<div className="space-y-1.5 sm:col-span-2">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Nome Completo *
 										</label>
 										<input
@@ -538,7 +538,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											E-mail *
 										</label>
 										<input
@@ -552,7 +552,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Contato/WhatsApp *
 										</label>
 										<input
@@ -566,7 +566,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											CPF/CNPJ *
 										</label>
 										<input
@@ -580,7 +580,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Nº da CNH *
 										</label>
 										<input
@@ -608,7 +608,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 								</div>
 								<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											CEP *
 										</label>
 										<input
@@ -623,7 +623,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5 sm:col-span-2">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Rua/Logradouro *
 										</label>
 										<input
@@ -637,7 +637,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Número *
 										</label>
 										<input
@@ -651,7 +651,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5 sm:col-span-2">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Complemento
 										</label>
 										<input
@@ -664,7 +664,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Bairro *
 										</label>
 										<input
@@ -678,7 +678,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Cidade *
 										</label>
 										<input
@@ -692,7 +692,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											UF *
 										</label>
 										<input
@@ -749,7 +749,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										},
 									].map((f) => (
 										<div key={f.id} className="space-y-1.5">
-											<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+											<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 												{f.label}
 											</label>
 											<input
@@ -885,7 +885,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 								</div>
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Início da Locação *
 										</label>
 										<input
@@ -898,7 +898,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Devolução Prevista *
 										</label>
 										<input
@@ -911,7 +911,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											KM Inicial *
 										</label>
 										<input
@@ -924,7 +924,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="sm:col-span-2 space-y-1.5 mt-2">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Data do 1º Pagamento *
 										</label>
 										<div className="flex flex-col sm:flex-row gap-4 bg-bg-main border border-border-color rounded-xl p-4">
@@ -948,7 +948,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										)}
 									</div>
 									<div className="space-y-1.5 mt-2">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Modelo de Aluguel
 										</label>
 										<div className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main font-bold">
@@ -956,7 +956,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										</div>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Valor Unitário (R$) *
 										</label>
 										<input
@@ -970,7 +970,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Caução (R$)
 										</label>
 										<input
@@ -1013,7 +1013,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 
 								<div className="space-y-4">
 									<div className="space-y-2">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Fotos da Vistoria (Múltiplas)
 										</label>
 										<input
@@ -1031,7 +1031,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 											<span className="text-xs font-bold text-muted-olive group-hover:text-accent">
 												Clique para adicionar fotos
 											</span>
-											<span className="text-xs text-slate-400 mt-1">
+											<span className="text-xs text-muted-olive mt-1">
 												Você pode selecionar várias imagens de uma vez
 											</span>
 										</label>
@@ -1060,7 +1060,7 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 									)}
 
 									<div className="space-y-1.5 pt-4">
-										<label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider ml-1">
+										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Observações da Vistoria
 										</label>
 										<textarea
@@ -1367,12 +1367,12 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 						)}
 
 						{/* Botoes de Navegação internos ao Form para garantir funcionamento do Submit */}
-						<div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-800 flex justify-between gap-3">
+						<div className="pt-6 mt-6 border-t border-border-color flex justify-between gap-3">
 							<button
 								type="button"
 								onClick={step === 1 ? onClose : () => setStep(step - 1)}
 								disabled={loading}
-								className="flex items-center px-5 py-2.5 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white font-bold transition-colors">
+								className="flex items-center px-5 py-2.5 rounded-xl text-muted-olive hover:text-main font-bold transition-colors">
 								{step === 1 ? (
 									"Cancelar"
 								) : (

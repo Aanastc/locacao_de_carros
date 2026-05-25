@@ -118,11 +118,11 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="bg-bg-card border border-border-color rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         
-        <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
-          <h2 className="text-xl font-black text-slate-900 dark:text-white">Encerrar Aluguel</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-main transition-colors">
+        <div className="flex justify-between items-center p-6 border-b border-border-color bg-slate-50/50 dark:bg-slate-950/20">
+          <h2 className="text-xl font-black text-main">Encerrar Aluguel</h2>
+          <button onClick={onClose} className="text-muted-olive hover:text-main transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -130,16 +130,16 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
         <div className="p-6 overflow-y-auto">
           {error && <div className="bg-danger/10 text-danger p-3 rounded-lg mb-4 text-sm font-medium border border-danger/20">{error}</div>}
 
-          <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-6">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Cliente</p>
-            <p className="text-slate-900 dark:text-white font-bold">{rental.client_name}</p>
-            <div className="flex justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="bg-bg-main border border-border-color rounded-2xl p-4 mb-6">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-1">Cliente</p>
+            <p className="text-main font-bold">{rental.client_name}</p>
+            <div className="flex justify-between mt-3 pt-3 border-t border-border-color">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Km Inicial</p>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">{rental.initial_km} km</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-olive">Km Inicial</p>
+                <p className="text-sm font-bold text-main">{rental.initial_km} km</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Valor Acordado</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-olive">Valor Acordado</p>
                 <p className="text-sm font-bold text-primary">R$ {rental.total_price}</p>
               </div>
             </div>
@@ -147,13 +147,13 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
 
           <form id="finishForm" onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Data Real de Devolução</label>
-              <input required type="date" name="actual_end_date" value={formData.actual_end_date} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none font-medium dark:[color-scheme:dark]" />
+              <label className="text-xs font-black uppercase tracking-widest text-muted-olive">Data Real de Devolução</label>
+              <input required type="date" name="actual_end_date" value={formData.actual_end_date} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-medium dark:[color-scheme:dark]" />
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Km Final do Veículo</label>
-              <input required type="number" name="final_km" value={formData.final_km} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none font-medium" />
+              <label className="text-xs font-black uppercase tracking-widest text-muted-olive">Km Final do Veículo</label>
+              <input required type="number" name="final_km" value={formData.final_km} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-medium" />
             </div>
 
             {isEarlyReturn && (
@@ -169,32 +169,32 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
             )}
 
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Status do Pagamento</label>
-              <select name="payment_status" value={formData.payment_status} onChange={handleChange} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none appearance-none font-medium dark:[color-scheme:dark]">
+              <label className="text-xs font-black uppercase tracking-widest text-muted-olive">Status do Pagamento</label>
+              <select name="payment_status" value={formData.payment_status} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none font-medium dark:[color-scheme:dark]">
                 <option value="Pendente">Pendente</option>
                 <option value="Pago">Pago</option>
               </select>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+            <div className="pt-4 border-t border-border-color space-y-4">
               <div className="flex items-center gap-2 text-accent">
                 <Camera className="w-5 h-5" />
                 <h3 className="font-black uppercase text-xs tracking-widest">Vistoria Final</h3>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Fotos da Vistoria (Múltiplas)</label>
+                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Fotos da Vistoria (Múltiplas)</label>
                 <input type="file" multiple accept="image/*" onChange={handleInspectionFileChange} className="hidden" id="end_inspection_files" />
-                <label htmlFor="end_inspection_files" className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group">
-                  <Plus className="w-6 h-6 text-slate-400 group-hover:text-accent mb-2" />
-                  <span className="text-[10px] font-bold text-slate-400 group-hover:text-accent">Clique para adicionar fotos</span>
+                <label htmlFor="end_inspection_files" className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border-color rounded-2xl cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group">
+                  <Plus className="w-6 h-6 text-muted-olive group-hover:text-accent mb-2" />
+                  <span className="text-[10px] font-bold text-muted-olive group-hover:text-accent">Clique para adicionar fotos</span>
                 </label>
               </div>
 
               {endInspectionFiles.length > 0 && (
                 <div className="grid grid-cols-4 gap-2 mt-2">
                   {endInspectionFiles.map((file, idx) => (
-                    <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                    <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-border-color">
                       <img src={URL.createObjectURL(file)} alt={`Vistoria ${idx}`} className="w-full h-full object-cover" />
                       <button type="button" onClick={() => removeInspectionFile(idx)} className="absolute top-1 right-1 bg-danger text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
                         <Trash className="w-3 h-3" />
@@ -205,13 +205,13 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
               )}
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observações da Vistoria Final</label>
+                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Observações da Vistoria Final</label>
                 <textarea 
                   name="end_inspection_notes" 
                   value={formData.end_inspection_notes} 
                   onChange={handleChange} 
                   rows="2" 
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-accent outline-none resize-none text-xs" 
+                  className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none resize-none text-xs" 
                   placeholder="Observações sobre o estado do veículo na devolução..."
                 />
               </div>
@@ -219,8 +219,8 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
           </form>
         </div>
 
-        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white font-bold text-sm">
+        <div className="p-6 border-t border-border-color bg-slate-50/50 dark:bg-slate-950/20 flex justify-end gap-3">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-muted-olive hover:text-main font-bold text-sm">
             Cancelar
           </button>
           <button type="submit" form="finishForm" disabled={loading} className="bg-primary text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center shadow-lg shadow-primary/20">
