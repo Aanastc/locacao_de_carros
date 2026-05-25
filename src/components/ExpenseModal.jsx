@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { X, CircleNotch, Trash } from '@phosphor-icons/react'
 import { useAuth } from '../context/AuthContext'
+import ManageExpenseCategories from './ManageExpenseCategories'
+import { PencilSimple } from '@phosphor-icons/react'
 
 export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
   const { user } = useAuth()
@@ -10,6 +12,7 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
   const [isInitialized, setIsInitialized] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [showManage, setShowManage] = useState(false)
 
   const [formData, setFormData] = useState({
     expense_type: expense?.expense_type || 'Manutenção',
@@ -20,24 +23,28 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
     oil_change_km: ''
   })
 
-  const [categories, setCategories] = useState(['Troca de óleo', 'Manutenção', 'Seguro', 'Alinhamento', 'Multas'])
+  const [categories, setCategories] = useState([])
+
+  const loadCategories = async () => {
+    const hidden = JSON.parse(localStorage.getItem(`hiddenExpenseCategories_${user.id}`) || '[]')
+    const defaultCats = ['Troca de óleo', 'Manutenção', 'Seguro', 'Alinhamento', 'Multas'].filter(c => !hidden.includes(c))
+    
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('expense_type')
+      .eq('user_id', user.id)
+    
+    if (!error && data) {
+      const unique = [...new Set(data.map(item => item.expense_type))]
+      const combined = [...new Set([...defaultCats, ...unique])]
+      setCategories(combined.sort())
+    } else {
+      setCategories(defaultCats)
+    }
+  }
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('expense_type')
-        .eq('user_id', user.id)
-      
-      if (!error && data) {
-        const unique = [...new Set(data.map(item => item.expense_type))]
-        setCategories(prev => {
-          const combined = [...new Set([...prev, ...unique])]
-          return combined.sort()
-        })
-      }
-    }
-    fetchCategories()
+    loadCategories()
   }, [user.id])
 
   useEffect(() => {
@@ -197,7 +204,12 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
 
           <form id="expenseForm" onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Tipo de Despesa *</label>
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Tipo de Despesa *</label>
+                <button type="button" onClick={() => setShowManage(true)} className="text-[10px] font-black uppercase text-accent tracking-widest flex items-center gap-1 hover:opacity-80 transition-opacity">
+                  <PencilSimple className="w-3 h-3" /> Gerenciar Tipos
+                </button>
+              </div>
               <select name="expense_type" value={formData.expense_type} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer dark:[color-scheme:dark]">
                 {categories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
@@ -288,6 +300,14 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
           )}
         </div>
       </div>
+      
+      {showManage && (
+        <ManageExpenseCategories 
+          user={user} 
+          onClose={() => setShowManage(false)} 
+          onCategoriesUpdated={loadCategories} 
+        />
+      )}
     </div>
   )
 }
