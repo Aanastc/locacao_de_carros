@@ -9,10 +9,13 @@ export default function InsuranceModal({ car, onClose, onSuccess }) {
   const [error, setError] = useState('')
 
   const [formData, setFormData] = useState({
-    company: '',
-    amount: '',
+    company_name: '',
     start_date: new Date().toISOString().split('T')[0],
-    installments: 1
+    total_amount: '',
+    payment_type: 'A vista',
+    installments_count: 1,
+    payment_day: new Date().getDate(),
+    end_date: ''
   })
 
   const handleChange = (e) => {
@@ -42,55 +45,75 @@ export default function InsuranceModal({ car, onClose, onSuccess }) {
     setError('')
 
     try {
-      const totalAmount = parseMaskedValue(formData.amount)
+      const totalAmount = parseMaskedValue(formData.total_amount)
       if (totalAmount <= 0) throw new Error("Valor total inválido.")
+      if (!formData.end_date) throw new Error("Informe a validade do seguro.")
       
-      const installments = parseInt(formData.installments)
+      const isInstallment = formData.payment_type === 'Parcelado'
+      const installments = isInstallment ? parseInt(formData.installments_count) : 1
+      
+      // 1. Criar a Apólice (Insurance)
+      const { data: insurance, error: insError } = await supabase.from('insurances').insert([{
+        car_id: car.id,
+        company_name: formData.company_name,
+        total_amount: totalAmount,
+        payment_type: formData.payment_type,
+        installments_count: installments,
+        payment_day: isInstallment ? parseInt(formData.payment_day) : null,
+        start_date: formData.start_date,
+        end_date: formData.end_date
+      }]).select().single()
+
+      if (insError) {
+        if (insError.code === '42P01') throw new Error("A tabela 'insurances' não existe. Execute o script SQL gerado.")
+        throw insError
+      }
+
+      // 2. Criar os Pagamentos Agendados
       const installmentValue = totalAmount / installments
-      
       const expensesToInsert = []
       
-      // Parse data localmente ignorando fuso
-      const [year, month, day] = formData.start_date.split('-').map(Number)
+      const baseDate = new Date(formData.start_date + 'T12:00:00')
+      const currentMonth = baseDate.getMonth()
+      const currentYear = baseDate.getFullYear()
       
       for (let i = 0; i < installments; i++) {
-        // Cria a data da parcela incrementando os meses
-        const date = new Date(year, month - 1 + i, day)
+        let dueDate
+        if (isInstallment) {
+           dueDate = new Date(currentYear, currentMonth + i, parseInt(formData.payment_day))
+        } else {
+           dueDate = baseDate // À vista, vencimento na data de contratação
+        }
         
-        // Ajusta para ultimo dia do mes caso o mes alvo seja menor
-        // Ex: 31 de Janeiro + 1 mes = 3 de Março. (O javascript ajusta assim).
-        // Se a data original era 31, e mudou pra mes seguinte q tem 28 dias, o javascript vaza.
-        // O ideal é uma lib, mas podemos fazer algo simples:
-        const y = date.getFullYear()
-        const m = String(date.getMonth() + 1).padStart(2, '0')
-        const d = String(date.getDate()).padStart(2, '0')
-        
+        const y = dueDate.getFullYear()
+        const m = String(dueDate.getMonth() + 1).padStart(2, '0')
+        const d = String(dueDate.getDate()).padStart(2, '0')
         const expenseDate = `${y}-${m}-${d}`
 
-        let description = `${formData.company}`
+        let description = `${formData.company_name}`
         if (installments > 1) {
             description += ` - Parcela ${i + 1}/${installments}`
         }
 
         expensesToInsert.push({
           car_id: car.id,
-          user_id: user.id,
+          insurance_id: insurance.id,
           expense_type: 'Seguro',
           amount: parseFloat(installmentValue.toFixed(2)),
-          expense_date: expenseDate,
-          description: description
+          due_date: expenseDate,
+          description: description,
+          status: 'Pendente'
         })
       }
 
-      // Arredondamento do total pode causar divergencia de 1 centavo
-      // Ajuste na ultima parcela se precisar
+      // Ajustar diferença de centavos na última parcela
       const calculatedTotal = expensesToInsert.reduce((acc, curr) => acc + curr.amount, 0)
       if (Math.abs(calculatedTotal - totalAmount) > 0.001) {
           const diff = totalAmount - calculatedTotal
           expensesToInsert[installments - 1].amount += parseFloat(diff.toFixed(2))
       }
 
-      const { error: expError } = await supabase.from('expenses').insert(expensesToInsert)
+      const { error: expError } = await supabase.from('scheduled_expenses').insert(expensesToInsert)
       if (expError) throw expError
 
       onSuccess()
@@ -119,38 +142,74 @@ export default function InsuranceModal({ car, onClose, onSuccess }) {
         <div className="p-6">
           {error && <div className="bg-danger/10 text-danger border border-danger/20 p-3 rounded-xl mb-4 text-sm font-medium">{error}</div>}
 
-          <div className="bg-accent/5 border border-accent/20 p-4 rounded-xl mb-6">
-            <p className="text-xs font-medium text-main">
-              Este assistente vai diluir automaticamente o valor total do seguro ao longo dos meses selecionados, criando os lançamentos diretamente na aba de Despesas da Empresa.
-            </p>
-          </div>
-
           <form id="insuranceForm" onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Seguradora / Empresa *</label>
-              <input required type="text" name="company" value={formData.company} onChange={handleChange} placeholder="Ex: Porto Seguro, HDI, Suhai..." className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" />
+              <input required type="text" name="company_name" list="insurance-companies" value={formData.company_name} onChange={handleChange} placeholder="Ex: Porto Seguro..." className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" />
+              <datalist id="insurance-companies">
+                 <option value="Porto Seguro" />
+                 <option value="Suhai" />
+                 <option value="Azul Seguros" />
+                 <option value="HDI" />
+                 <option value="Allianz" />
+                 <option value="Tokio Marine" />
+                 <option value="Mapfre" />
+                 <option value="Bradesco Seguros" />
+                 <option value="SulAmérica" />
+                 <option value="Youse" />
+              </datalist>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Data da Contratação *</label>
+                <input required type="date" name="start_date" value={formData.start_date} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Validade do Seguro *</label>
+                <input required type="date" name="end_date" value={formData.end_date} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
+              </div>
             </div>
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Valor Total (R$) *</label>
-              <input required type="text" inputMode="numeric" name="amount" value={formData.amount} onChange={handleCurrencyChange} placeholder="Ex: 2.500,00" className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold" />
+              <input required type="text" inputMode="numeric" name="total_amount" value={formData.total_amount} onChange={handleCurrencyChange} placeholder="Ex: 2.500,00" className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold" />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Data 1ª Parcela *</label>
-                <input required type="date" name="start_date" value={formData.start_date} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
-                </div>
-                
-                <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Nº de Parcelas *</label>
-                <select name="installments" value={formData.installments} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
-                    {[...Array(12)].map((_, i) => (
-                        <option key={i + 1} value={i + 1}>{i + 1}x {i === 0 ? '(À vista)' : ''}</option>
-                    ))}
+            <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Forma de Pagamento *</label>
+                <select name="payment_type" value={formData.payment_type} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
+                    <option value="A vista">À vista</option>
+                    <option value="Parcelado">Parcelado</option>
                 </select>
-                </div>
             </div>
+
+            {formData.payment_type === 'Parcelado' && (
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Nº de Parcelas *</label>
+                        <select name="installments_count" value={formData.installments_count} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
+                            {[...Array(12)].map((_, i) => (
+                                <option key={i + 2} value={i + 2}>{i + 2}x</option>
+                            ))}
+                        </select>
+                        {parseMaskedValue(formData.total_amount) > 0 && formData.payment_type === 'Parcelado' && (
+                            <p className="text-[10px] text-accent font-bold mt-1 ml-1">
+                                R$ {(parseMaskedValue(formData.total_amount) / parseInt(formData.installments_count)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / mês
+                            </p>
+                        )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Dia do Vencimento *</label>
+                        <select name="payment_day" value={formData.payment_day} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
+                            {[...Array(31)].map((_, i) => (
+                                <option key={i + 1} value={i + 1}>Dia {i + 1}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            )}
           </form>
         </div>
 

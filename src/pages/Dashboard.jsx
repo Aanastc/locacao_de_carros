@@ -59,6 +59,7 @@ export default function Dashboard() {
   })
 
   const [selectedCarForRent, setSelectedCarForRent] = useState(null)
+  const [todayEvents, setTodayEvents] = useState([])
 
   useEffect(() => {
     if (user) {
@@ -217,6 +218,46 @@ export default function Dashboard() {
       })
       
       setAlerts([...newAlerts, ...paymentAlerts])
+
+      // 7. Acontecimentos de Hoje
+      const todayStr = format(new Date(), 'yyyy-MM-dd')
+      const carIds = carsData?.map(c => c.id) || []
+      
+      let schedExpToday = []
+      if (carIds.length > 0) {
+        const { data: seData } = await supabase
+          .from('scheduled_expenses')
+          .select('*, cars(brand, model, license_plate)')
+          .in('car_id', carIds)
+          .eq('due_date', todayStr)
+          .eq('status', 'Pendente')
+        if (seData) schedExpToday = seData
+      }
+
+      const events = []
+      schedExpToday.forEach(exp => {
+        events.push({
+          type: 'expense',
+          title: 'Conta a Pagar',
+          desc: `${exp.expense_type} - ${exp.cars?.brand} ${exp.cars?.model} (${exp.cars?.license_plate})`,
+          amount: exp.amount,
+          carPlate: exp.cars?.license_plate
+        })
+      })
+
+      activeRentals.forEach(rent => {
+        if (rent.expected_end_date === todayStr) {
+          const car = carsData.find(c => c.id === rent.car_id)
+          events.push({
+            type: 'rental_end',
+            title: 'Contrato Vencendo',
+            desc: `${rent.client_name} - ${car?.brand} ${car?.model} (${car?.license_plate})`,
+            carPlate: car?.license_plate
+          })
+        }
+      })
+
+      setTodayEvents(events)
 
     } catch (error) {
       console.error('Erro ao buscar dados do dashboard:', error.message)
@@ -534,6 +575,8 @@ export default function Dashboard() {
               </div>
             </div>
 
+
+
             {/* Quick Stats - Minimalist */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
               <div className="relative group p-6 glass rounded-3xl border border-border-color/50">
@@ -624,6 +667,41 @@ export default function Dashboard() {
 
               {/* Operations Column */}
               <div className="space-y-8">
+                {/* Acontecimentos de Hoje - Lista Discreta */}
+                {todayEvents.length > 0 && (
+                  <div className="bg-white/20 dark:bg-slate-900/20 rounded-[2rem] p-6 border border-border-color/30 shadow-sm animate-in fade-in slide-in-from-right-4">
+                    <div className="flex items-center justify-between mb-5">
+                      <h3 className="text-xs font-black uppercase tracking-[0.2em] text-main flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-warning" weight="bold" /> Previsto para Hoje
+                      </h3>
+                      <span className="text-[10px] font-bold text-muted-olive bg-white/50 dark:bg-slate-800/50 px-2 py-0.5 rounded-md border border-border-color/50">
+                        {new Date().toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                    <div className="space-y-3">
+                      {todayEvents.map((ev, i) => (
+                        <Link to={`/car/${ev.carPlate}`} key={i} className="group flex items-center justify-between p-3 rounded-xl hover:bg-white/50 dark:hover:bg-slate-800/50 border border-transparent hover:border-border-color/50 transition-all cursor-pointer">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-1.5 h-1.5 rounded-full ${ev.type === 'expense' ? 'bg-danger' : 'bg-warning'}`}></div>
+                            <div>
+                              <p className="text-[10px] font-black uppercase text-muted-olive mb-0.5 tracking-wider">{ev.title}</p>
+                              <p className="text-xs font-bold text-main line-clamp-1 pr-2 max-w-[150px]">{ev.desc}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 text-right">
+                            {ev.amount && ev.type === 'expense' && (
+                              <span className="text-xs font-black text-danger">
+                                R$ {parseFloat(ev.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </span>
+                            )}
+                            <ArrowUpRight className="w-3.5 h-3.5 text-muted-olive group-hover:text-primary transition-colors flex-shrink-0" />
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Alerts Section - Enhanced */}
                 <div className="glass rounded-[2rem] p-8 border border-border-color/50 shadow-lg shadow-black/5">
                   <div className="flex items-center gap-3 mb-6">

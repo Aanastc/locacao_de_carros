@@ -10,7 +10,9 @@ export default function IncidentModal({ car, activeRental, onClose, onSuccess })
     incident_date: new Date().toISOString().split('T')[0],
     description: '',
     amount: '',
-    payment_source: 'Caução'
+    is_linked_to_rental: !!activeRental,
+    payment_source: 'Caução',
+    payment_date: new Date().toISOString().split('T')[0]
   })
 
   const handleChange = (e) => {
@@ -43,24 +45,86 @@ export default function IncidentModal({ car, activeRental, onClose, onSuccess })
       const amount = parseMaskedValue(formData.amount)
       if (amount <= 0) throw new Error("Valor do sinistro deve ser maior que zero.")
 
-      if (formData.payment_source === 'Caução' && !activeRental) {
-        throw new Error("Não há contrato de aluguel ativo neste momento para deduzir o caução.")
+      if (formData.is_linked_to_rental) {
+        if (!activeRental) throw new Error("Não há contrato de aluguel ativo para vincular.");
+
+        const { error: insError } = await supabase.from('rental_incidents').insert([{
+          rental_id: activeRental.id,
+          incident_date: formData.incident_date,
+          description: formData.description,
+          amount: amount
+        }])
+
+        if (insError) throw insError
       }
 
-      const { error: insError } = await supabase.from('incidents').insert([{
-        car_id: car.id,
-        rental_id: formData.payment_source === 'Caução' ? activeRental.id : null,
-        incident_date: formData.incident_date,
-        description: formData.description,
-        amount: amount,
-        payment_source: formData.payment_source
-      }])
+      const isPaidFromDeposit = formData.is_linked_to_rental && formData.payment_source === 'Caução'
+      const isPaidByRenterExtra = formData.is_linked_to_rental && formData.payment_source === 'renter_extra'
 
-      if (insError) {
-        if (insError.code === '42P01') {
-           throw new Error("A tabela 'incidents' ainda não foi criada. Por favor, execute o script SQL.")
-        }
-        throw insError
+      if (!isPaidFromDeposit) {
+          if (isPaidByRenterExtra) {
+              const isPastOrToday = new Date(`${formData.payment_date}T23:59:59`) <= new Date()
+              let incomeId = null
+              
+              if (isPastOrToday) {
+                  const { data: incData, error: incError } = await supabase.from('incomes').insert([{
+                      car_id: car.id,
+                      user_id: activeRental?.user_id || car.owner_id,
+                      income_type: 'Reembolso Sinistro',
+                      amount: amount,
+                      payment_date: formData.payment_date,
+                      notes: `Reembolso pago pelo locatário: ${formData.description}`,
+                      rental_id: activeRental?.id,
+                      payment_method: 'A combinar'
+                  }]).select().single()
+                  
+                  if (incError) throw incError
+                  incomeId = incData.id
+              }
+              
+              const { error: schedError } = await supabase.from('scheduled_expenses').insert([{
+                  car_id: car.id,
+                  rental_id: activeRental?.id,
+                  expense_type: 'Reembolso Sinistro',
+                  description: formData.description,
+                  amount: amount,
+                  due_date: formData.payment_date,
+                  status: isPastOrToday ? 'Pago' : 'Pendente'
+              }])
+              
+              if (schedError) throw schedError
+          } else {
+              // Lógica de despesa (pago pelo owner)
+              const isPastOrToday = new Date(`${formData.payment_date}T23:59:59`) <= new Date()
+              let expenseId = null
+              
+              if (isPastOrToday) {
+                  const { data: expData, error: expError } = await supabase.from('expenses').insert([{
+                      car_id: car.id,
+                      user_id: activeRental?.user_id || car.owner_id,
+                      expense_type: 'Sinistro',
+                      amount: amount,
+                      expense_date: formData.payment_date,
+                      description: formData.description
+                  }]).select().single()
+                  
+                  if (expError) throw expError
+                  expenseId = expData.id
+              }
+              
+              const { error: schedError } = await supabase.from('scheduled_expenses').insert([{
+                  car_id: car.id,
+                  rental_id: formData.is_linked_to_rental ? activeRental?.id : null,
+                  expense_type: 'Sinistro',
+                  description: formData.description,
+                  amount: amount,
+                  due_date: formData.payment_date,
+                  status: isPastOrToday ? 'Pago' : 'Pendente',
+                  expense_id: expenseId
+              }])
+              
+              if (schedError) throw schedError
+          }
       }
 
       onSuccess()
@@ -89,32 +153,58 @@ export default function IncidentModal({ car, activeRental, onClose, onSuccess })
         <div className="p-6">
           {error && <div className="bg-danger/10 text-danger border border-danger/20 p-3 rounded-xl mb-4 text-sm font-medium">{error}</div>}
 
-          {formData.payment_source === 'Caução' ? (
+          {formData.is_linked_to_rental && formData.payment_source === 'Caução' ? (
              <div className="bg-danger/5 border border-danger/20 p-4 rounded-xl mb-6 transition-all">
                <p className="text-xs font-medium text-main">
-                 O valor será deduzido do caução {activeRental ? `de R$ ${activeRental.security_deposit || '0,00'}` : ''} do contrato ativo.
+                 O valor será deduzido do caução {activeRental ? `de R$ ${activeRental.security_deposit || '0,00'}` : ''} do contrato ativo. O incidente também ficará registrado no histórico do locatário.
+               </p>
+             </div>
+          ) : formData.is_linked_to_rental && formData.payment_source === 'renter_extra' ? (
+             <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl mb-6 transition-all">
+               <p className="text-xs font-medium text-main">
+                 O valor será lançado como uma <strong>Receita</strong> (Reembolso de Sinistro). O incidente ficará no histórico e no cronograma.
                </p>
              </div>
           ) : (
             <div className="bg-accent/5 border border-accent/20 p-4 rounded-xl mb-6 transition-all">
                <p className="text-xs font-medium text-main">
-                 Este sinistro ficará registrado apenas no histórico do carro/seguro, sem afetar o contrato do locatário atual.
+                 O pagamento deste sinistro entrará no fluxo como uma <strong>Despesa</strong>. Se a data de pagamento for hoje ou passada, entrará em Gastos; se for futura, entrará no Cronograma.
                </p>
              </div>
           )}
 
           <form id="incidentForm" onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Origem do Pagamento *</label>
-              <select name="payment_source" value={formData.payment_source} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
-                <option value="Caução" disabled={!activeRental}>Descontar do Caução (Contrato Atual)</option>
-                <option value="Pago à parte / Seguro">Pago à parte / Seguro Acionado</option>
-              </select>
-            </div>
+            {activeRental && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Vinculado ao Aluguel Ativo? *</label>
+                  <select name="is_linked_to_rental" value={formData.is_linked_to_rental} onChange={(e) => setFormData({...formData, is_linked_to_rental: e.target.value === 'true'})} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
+                    <option value="true">Sim, aconteceu durante o contrato atual</option>
+                    <option value="false">Não, não tem relação com o locatário</option>
+                  </select>
+                </div>
+            )}
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Data do Ocorrido *</label>
-              <input required type="date" name="incident_date" value={formData.incident_date} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
+            {formData.is_linked_to_rental && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Como será pago? *</label>
+                  <select name="payment_source" value={formData.payment_source} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
+                    <option value="owner">Pago por mim (Lançar Despesa)</option>
+                    <option value="Caução">Descontar do Caução do Contrato</option>
+                    <option value="renter_extra">Pago pelo locatário à parte (Gerar Receita)</option>
+                  </select>
+                </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Data do Ocorrido *</label>
+                <input required type="date" name="incident_date" value={formData.incident_date} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
+                </div>
+
+                <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Data de Pagamento *</label>
+                <input required type="date" name="payment_date" value={formData.payment_date} onChange={handleChange} disabled={formData.is_linked_to_rental && formData.payment_source === 'Caução'} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:[color-scheme:dark]" />
+                </div>
             </div>
 
             <div className="space-y-2">

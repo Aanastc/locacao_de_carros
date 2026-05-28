@@ -20,7 +20,10 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
     amount: expense ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(expense.amount) : '',
     expense_date: expense?.expense_date || new Date().toISOString().split('T')[0],
     description: expense?.description || '',
-    oil_change_km: ''
+    oil_change_km: '',
+    payment_type: 'A vista',
+    installments_count: 1,
+    payment_day: new Date().getDate()
   })
 
   const [categories, setCategories] = useState([])
@@ -130,15 +133,57 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
         }).eq('id', expense.id)
         if (expError) throw expError
       } else {
-        const { error: expError } = await supabase.from('expenses').insert([{
-          car_id: car.id,
-          user_id: user.id,
-          expense_type: finalType,
-          amount: parseMaskedValue(formData.amount),
-          expense_date: formData.expense_date,
-          description: finalDescription || null
-        }])
-        if (expError) throw expError
+        if (formData.payment_type === 'Parcelado') {
+            const totalAmount = parseMaskedValue(formData.amount)
+            const installments = parseInt(formData.installments_count)
+            const installmentValue = totalAmount / installments
+            const expensesToInsert = []
+            
+            const baseDate = new Date(formData.expense_date + 'T12:00:00')
+            const currentMonth = baseDate.getMonth()
+            const currentYear = baseDate.getFullYear()
+            
+            for (let i = 0; i < installments; i++) {
+                const dueDate = new Date(currentYear, currentMonth + i, parseInt(formData.payment_day))
+                
+                const y = dueDate.getFullYear()
+                const m = String(dueDate.getMonth() + 1).padStart(2, '0')
+                const d = String(dueDate.getDate()).padStart(2, '0')
+                const expenseDate = `${y}-${m}-${d}`
+
+                let description = `${finalType}`
+                if (finalDescription) description += ` - ${finalDescription}`
+                description += ` (Parcela ${i + 1}/${installments})`
+
+                expensesToInsert.push({
+                  car_id: car.id,
+                  expense_type: finalType,
+                  amount: parseFloat(installmentValue.toFixed(2)),
+                  due_date: expenseDate,
+                  description: description,
+                  status: 'Pendente'
+                })
+            }
+
+            const calculatedTotal = expensesToInsert.reduce((acc, curr) => acc + curr.amount, 0)
+            if (Math.abs(calculatedTotal - totalAmount) > 0.001) {
+                const diff = totalAmount - calculatedTotal
+                expensesToInsert[installments - 1].amount += parseFloat(diff.toFixed(2))
+            }
+
+            const { error: expError } = await supabase.from('scheduled_expenses').insert(expensesToInsert)
+            if (expError) throw expError
+        } else {
+            const { error: expError } = await supabase.from('expenses').insert([{
+              car_id: car.id,
+              user_id: user.id,
+              expense_type: finalType,
+              amount: parseMaskedValue(formData.amount),
+              expense_date: formData.expense_date,
+              description: finalDescription || null
+            }])
+            if (expError) throw expError
+        }
       }
 
       // Se for troca de óleo e informou nova KM, atualizar o carro e logar
@@ -241,12 +286,49 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
             )}
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Valor (R$) *</label>
-              <input required type="text" inputMode="numeric" name="amount" value={formData.amount} onChange={handleCurrencyChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" />
+              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Valor Total (R$) *</label>
+              <input required type="text" inputMode="numeric" name="amount" value={formData.amount} onChange={handleCurrencyChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold" />
             </div>
 
+            {!expense && (
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Forma de Pagamento *</label>
+                    <select name="payment_type" value={formData.payment_type} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
+                        <option value="A vista">À vista</option>
+                        <option value="Parcelado">Parcelado</option>
+                    </select>
+                </div>
+            )}
+
+            {!expense && formData.payment_type === 'Parcelado' && (
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Nº de Parcelas *</label>
+                        <select name="installments_count" value={formData.installments_count} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
+                            {[...Array(12)].map((_, i) => (
+                                <option key={i + 2} value={i + 2}>{i + 2}x</option>
+                            ))}
+                        </select>
+                        {parseMaskedValue(formData.amount) > 0 && (
+                            <p className="text-[10px] text-accent font-bold mt-1 ml-1">
+                                R$ {(parseMaskedValue(formData.amount) / parseInt(formData.installments_count)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / mês
+                            </p>
+                        )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Dia do Vencimento *</label>
+                        <select name="payment_day" value={formData.payment_day} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
+                            {[...Array(31)].map((_, i) => (
+                                <option key={i + 1} value={i + 1}>Dia {i + 1}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            )}
+
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Data da Despesa *</label>
+              <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Data da Despesa (Contratação/Compra) *</label>
               <input required type="date" name="expense_date" value={formData.expense_date} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
             </div>
 
