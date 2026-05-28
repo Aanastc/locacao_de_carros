@@ -3,18 +3,23 @@ import { supabase } from '../lib/supabase'
 import { X, CircleNotch, MapPin } from '@phosphor-icons/react'
 import { useAuth } from '../context/AuthContext'
 
-export default function AddKmModal({ car, onClose, onSuccess }) {
+export default function AddKmModal({ car, kmLog, onClose, onSuccess }) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const now = new Date()
-  const localDatetime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
+  const getInitialDate = () => {
+    if (kmLog && kmLog.date) {
+      return new Date(new Date(kmLog.date).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+    }
+    const now = new Date()
+    return new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
+  }
 
   const [formData, setFormData] = useState({
-    km: car.current_km || '',
-    date: localDatetime,
-    notes: ''
+    km: kmLog ? kmLog.km : (car.current_km || ''),
+    date: getInitialDate(),
+    notes: kmLog ? kmLog.label || '' : ''
   })
 
   const handleChange = (e) => {
@@ -32,15 +37,23 @@ export default function AddKmModal({ car, onClose, onSuccess }) {
       if (isNaN(kmNum) || kmNum < 0) throw new Error('Quilometragem inválida.')
       const dateUtc = new Date(formData.date).toISOString()
 
-      const { error: logError } = await supabase.from('km_logs').insert([{
-        car_id: car.id,
-        user_id: user.id,
-        km: kmNum,
-        date: dateUtc,
-        notes: formData.notes || null
-      }])
-
-      if (logError) throw logError
+      if (kmLog) {
+          const { error: logError } = await supabase.from('km_logs').update({
+            km: kmNum,
+            date: dateUtc,
+            notes: formData.notes || null
+          }).eq('id', kmLog.id)
+          if (logError) throw logError
+      } else {
+          const { error: logError } = await supabase.from('km_logs').insert([{
+            car_id: car.id,
+            user_id: user.id,
+            km: kmNum,
+            date: dateUtc,
+            notes: formData.notes || null
+          }])
+          if (logError) throw logError
+      }
 
       if (kmNum > (car.current_km || 0)) {
         await supabase.from('cars').update({ current_km: kmNum }).eq('id', car.id)
@@ -63,7 +76,7 @@ export default function AddKmModal({ car, onClose, onSuccess }) {
         <div className="flex justify-between items-center p-6 border-b border-border-color bg-slate-50/50 dark:bg-slate-950/20">
           <h2 className="text-xl font-black text-main flex items-center gap-2">
             <MapPin className="w-6 h-6 text-accent" />
-            Lançar KM Avulso
+            {kmLog ? 'Editar KM Avulso' : 'Lançar KM Avulso'}
           </h2>
           <button onClick={onClose} className="text-muted-olive hover:text-main transition-colors">
             <X className="w-5 h-5" />

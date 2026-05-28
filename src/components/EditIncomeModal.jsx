@@ -4,6 +4,7 @@ import { X, CircleNotch } from '@phosphor-icons/react'
 
 export default function EditIncomeModal({ income, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
   const [isInitialized, setIsInitialized] = useState(false)
 
@@ -82,6 +83,28 @@ export default function EditIncomeModal({ income, onClose, onSuccess }) {
     }
   }
 
+  const handleDelete = async () => {
+    setDeleting(true)
+    setError('')
+    try {
+      const { error: delError } = await supabase
+        .from('incomes')
+        .delete()
+        .eq('id', income.id)
+      
+      if (delError) throw delError
+      
+      localStorage.removeItem(`editIncomeDraft_${income.id}`)
+      onSuccess()
+      onClose()
+    } catch (err) {
+      console.error(err)
+      setError('Erro ao excluir recebimento.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-bg-card border border-border-color rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
@@ -112,6 +135,7 @@ export default function EditIncomeModal({ income, onClose, onSuccess }) {
                 <option value="Cartão de Crédito">Cartão de Crédito</option>
                 <option value="Cartão de Débito">Cartão de Débito</option>
                 <option value="Transferência">Transferência Bancária</option>
+                <option value="A combinar">A combinar</option>
               </select>
             </div>
 
@@ -122,13 +146,23 @@ export default function EditIncomeModal({ income, onClose, onSuccess }) {
           </form>
         </div>
 
-        <div className="p-6 border-t border-border-color bg-slate-50/50 dark:bg-slate-950/20 flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-muted-olive hover:text-main font-bold text-sm">
-            Cancelar
+        <div className="p-6 border-t border-border-color bg-slate-50/50 dark:bg-slate-950/20 flex gap-3">
+          <button 
+            type="button" 
+            onClick={handleDelete}
+            disabled={deleting}
+            className="flex-none py-3 px-4 rounded-xl text-danger hover:bg-danger/10 font-bold text-sm transition-colors disabled:opacity-50"
+          >
+            {deleting ? <CircleNotch className="w-5 h-5 animate-spin mx-auto" /> : 'Excluir'}
           </button>
-          <button type="submit" form="editIncomeForm" disabled={loading} className="bg-accent text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center shadow-lg shadow-accent/20">
-            {loading ? <CircleNotch className="w-4 h-4 mr-2 animate-spin" /> : <span>Salvar Alterações</span>}
-          </button>
+          <div className="flex-1 flex gap-3">
+            <button type="button" onClick={onClose} className="flex-1 py-3 px-4 rounded-xl bg-bg-main border border-border-color text-main hover:bg-slate-50 dark:hover:bg-slate-800 font-bold text-sm transition-all text-center">
+              Cancelar
+            </button>
+            <button type="submit" form="editIncomeForm" disabled={loading} className="flex-1 py-3 px-4 rounded-xl bg-accent text-white font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20">
+              {loading ? <CircleNotch className="w-5 h-5 animate-spin" /> : <span>Salvar</span>}
+            </button>
+          </div>
         </div>
       </div>
     </div>

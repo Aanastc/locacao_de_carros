@@ -19,11 +19,14 @@ export default function Reports() {
   const [expenses, setExpenses] = useState([])
   const [rentals, setRentals] = useState([])
   const [cars, setCars] = useState([])
+  const [scheduledExpenses, setScheduledExpenses] = useState([])
 
   const [filterPeriod, setFilterPeriod] = useState('month')
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedCarId, setSelectedCarId] = useState('all')
+  const [selectedParcelCarId, setSelectedParcelCarId] = useState('all') // Filtro específico para Gastos Parcelados
+  const [selectedParcelYear, setSelectedParcelYear] = useState(new Date().getFullYear())
   const [availableYears, setAvailableYears] = useState([])
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export default function Reports() {
       fetchReportsData()
       fetchAvailablePeriods()
     }
-  }, [user?.id, filterPeriod, selectedMonth, selectedYear])
+  }, [user?.id, filterPeriod, selectedMonth, selectedYear, selectedParcelYear])
 
   const fetchAvailablePeriods = async () => {
     try {
@@ -70,10 +73,21 @@ export default function Reports() {
         supabase.from('cars').select('*').eq('owner_id', user.id)
       ])
 
+      const carsList = carsRes.data || []
+      const carIds = carsList.map(c => c.id)
+
+      let schedExpRes = { data: [] }
+      if (carIds.length > 0) {
+        const yearStart = new Date(selectedParcelYear, 0, 1).toISOString()
+        const yearEnd = new Date(selectedParcelYear, 11, 31, 23, 59, 59).toISOString()
+        schedExpRes = await supabase.from('scheduled_expenses').select('*').in('car_id', carIds).gte('due_date', yearStart).lte('due_date', yearEnd)
+      }
+
       setIncomes(incRes.data || [])
       setExpenses(expRes.data || [])
       setRentals(rentRes.data || [])
-      setCars(carsRes.data || [])
+      setCars(carsList)
+      setScheduledExpenses(schedExpRes.data || [])
     } catch (error) {
       console.error('Erro ao buscar relatórios:', error.message)
     } finally {
@@ -85,15 +99,17 @@ export default function Reports() {
     let fIncomes = incomes
     let fExpenses = expenses
     let fRentals = rentals
+    let fScheduled = scheduledExpenses
 
     if (selectedCarId !== 'all') {
       fIncomes = incomes.filter(inc => inc.rentals?.car_id === selectedCarId)
       fExpenses = expenses.filter(exp => exp.car_id === selectedCarId)
       fRentals = rentals.filter(rent => rent.car_id === selectedCarId)
+      fScheduled = scheduledExpenses.filter(exp => exp.car_id === selectedCarId)
     }
 
-    return { incomes: fIncomes, expenses: fExpenses, rentals: fRentals }
-  }, [incomes, expenses, rentals, selectedCarId])
+    return { incomes: fIncomes, expenses: fExpenses, rentals: fRentals, scheduledExpenses: fScheduled }
+  }, [incomes, expenses, rentals, scheduledExpenses, selectedCarId])
 
   const financialChartData = useMemo(() => {
     const { incomes: fIncomes, expenses: fExpenses } = filteredData
@@ -155,6 +171,31 @@ export default function Reports() {
     })
 
     return Object.entries(ranges).map(([name, value]) => ({ name, value }))
+  }, [filteredData])
+
+  const scheduledExpensesTableData = useMemo(() => {
+    const fScheduled = scheduledExpenses.filter(exp => selectedParcelCarId === 'all' || exp.car_id === selectedParcelCarId)
+    const grouped = {}
+
+    fScheduled.forEach(exp => {
+      let key = exp.expense_type
+      if (exp.description) {
+         // Regex para remover tanto "(Parcela 1/12)" quanto "- Parcela 1/12"
+         key = exp.description.replace(/\s*[-\(]*\s*Parcela \d+\/\d+[\)]*\s*/i, '').trim()
+      }
+
+      if (!grouped[key]) {
+        grouped[key] = { name: key, total: 0, months: Array(12).fill(0) }
+      }
+
+      const month = parseInt(exp.due_date.split('-')[1], 10) - 1
+      const amount = parseFloat(exp.amount)
+      
+      grouped[key].months[month] += amount
+      grouped[key].total += amount
+    })
+
+    return Object.values(grouped).sort((a, b) => b.total - a.total)
   }, [filteredData])
 
   const totalIncomes = filteredData.incomes.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
@@ -359,6 +400,71 @@ export default function Reports() {
                 <div className="p-3 bg-white/10 rounded-xl"><TrendDown className="w-6 h-6 text-danger" /></div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Gastos Parcelados */}
+        <div className="glass rounded-3xl p-6 md:p-8 mt-8 border border-border-color">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+            <h3 className="text-xl font-black flex items-center gap-3">
+              <Calendar className="w-6 h-6 text-danger" />
+              Gastos Parcelados ({selectedParcelYear})
+            </h3>
+            
+            <div className="flex items-center gap-2">
+              <select 
+                value={selectedParcelYear} 
+                onChange={(e) => setSelectedParcelYear(parseInt(e.target.value))}
+                className="bg-white/5 border border-border-color text-sm font-bold rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer"
+              >
+                {availableYears.map(y => <option key={`parcel-year-${y}`} value={y}>{y}</option>)}
+              </select>
+
+              <select 
+                value={selectedParcelCarId} 
+                onChange={(e) => setSelectedParcelCarId(e.target.value)}
+                className="bg-white/5 border border-border-color text-sm font-bold rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer"
+              >
+                <option value="all">Todos os Veículos</option>
+                {cars.map(car => (
+                  <option key={`parcel-${car.id}`} value={car.id}>{car.brand} {car.model} ({car.license_plate})</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="overflow-x-auto pb-4 scrollbar-thin">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr>
+                  <th className="p-4 border-b border-border-color font-black text-muted-olive uppercase tracking-widest text-xs min-w-[200px]">Despesa</th>
+                  {MONTHS.map(m => (
+                    <th key={m} className="p-4 border-b border-border-color font-black text-muted-olive uppercase tracking-widest text-xs text-right min-w-[100px]">{m.substring(0, 3)}</th>
+                  ))}
+                  <th className="p-4 border-b border-border-color font-black text-muted-olive uppercase tracking-widest text-xs text-right min-w-[120px]">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scheduledExpensesTableData.length === 0 ? (
+                  <tr>
+                    <td colSpan={14} className="p-8 text-center text-muted-olive font-bold">Nenhum gasto parcelado registrado neste ano.</td>
+                  </tr>
+                ) : (
+                  scheduledExpensesTableData.map((row, i) => (
+                    <tr key={i} className="hover:bg-primary/5 transition-colors group">
+                      <td className="p-4 border-b border-border-color/50 font-bold text-sm text-main">{row.name}</td>
+                      {row.months.map((val, mIdx) => (
+                        <td key={mIdx} className={`p-4 border-b border-border-color/50 text-right text-sm ${val > 0 ? 'font-black text-danger' : 'text-muted-olive font-medium'}`}>
+                          {val > 0 ? `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+                        </td>
+                      ))}
+                      <td className="p-4 border-b border-border-color/50 text-right font-black text-main">
+                        R$ {row.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
     </div>

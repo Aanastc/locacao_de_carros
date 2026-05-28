@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -25,6 +25,15 @@ import {
 	ClockCounterClockwise,
 	TrendUp,
 	ArrowDownRight,
+	PencilSimple,
+	Trash,
+	ArrowCounterClockwise,
+	Camera,
+	Envelope,
+	X,
+	WarningOctagon,
+	CaretLeft,
+	CaretRight
 } from "@phosphor-icons/react";
 
 import * as XLSX from "xlsx-js-style";
@@ -38,7 +47,10 @@ import EditCarModal from "../components/EditCarModal";
 import EditRentModal from "../components/EditRentModal";
 import RentDetailsModal from "../components/RentDetailsModal";
 import AddKmModal from "../components/AddKmModal";
-import { PencilSimple, Camera, Envelope } from "@phosphor-icons/react";
+import InsuranceModal from "../components/InsuranceModal";
+import IncidentModal from "../components/IncidentModal";
+import EditScheduledExpenseModal from "../components/EditScheduledExpenseModal";
+
 
 export default function CarDetails() {
 	const { plate } = useParams();
@@ -52,6 +64,9 @@ export default function CarDetails() {
 	const [selectedHistoryRent, setSelectedHistoryRent] = useState(null);
 	const [expenses, setExpenses] = useState([]);
 	const [incomes, setIncomes] = useState([]);
+	const [insurances, setInsurances] = useState([]);
+	const [scheduledExpenses, setScheduledExpenses] = useState([]);
+	const [rentalIncidents, setRentalIncidents] = useState([]);
 	const [kmLogs, setKmLogs] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
@@ -61,14 +76,34 @@ export default function CarDetails() {
 	const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
 
 	const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+	const [isInsuranceModalOpen, setIsInsuranceModalOpen] = useState(false);
+	const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
+	const [showInsuranceAlert, setShowInsuranceAlert] = useState(false);
 	const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
 	const [isEditCarModalOpen, setIsEditCarModalOpen] = useState(false);
 	const [isEditRentModalOpen, setIsEditRentModalOpen] = useState(false);
 	const [isAddKmModalOpen, setIsAddKmModalOpen] = useState(false);
+	const [editingKm, setEditingKm] = useState(null);
+    
+    // Finance Tab State
+    const [financeMonth, setFinanceMonth] = useState("all");
+	const [financeYear, setFinanceYear] = useState(new Date().getFullYear());
+	const [financeType, setFinanceType] = useState("all"); // Filtro de tipo no cronograma
+    const [editingScheduledExpense, setEditingScheduledExpense] = useState(null);
 	const [editingIncome, setEditingIncome] = useState(null);
 	const [editingExpense, setEditingExpense] = useState(null);
 	const [initialIncomeData, setInitialIncomeData] = useState(null);
 	const [activeFinanceTab, setActiveFinanceTab] = useState("cronograma"); // cronograma, gastos, receitas
+
+	const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
+
+	const handleNextImage = () => {
+		setCurrentGalleryIndex((prev) => (prev + 1) % galleryImages.length);
+	};
+
+	const handlePrevImage = () => {
+		setCurrentGalleryIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+	};
 
 	const generatePaymentSchedule = (rental) => {
 		if (!rental) return [];
@@ -120,38 +155,155 @@ export default function CarDetails() {
 		return dates;
 	};
 
-	const paymentSchedule = activeRental
-		? generatePaymentSchedule(activeRental).map((sched) => {
+	const paymentSchedule = useMemo(() => {
+		const unifiedSchedule = [];
+
+		if (activeRental) {
+			const rentalSchedule = generatePaymentSchedule(activeRental).map((sched) => {
 				const matchedIncome = incomes.find(
 					(inc) =>
 						inc.rental_id === activeRental.id &&
-						(inc.notes?.includes(
-							`parcela ${sched.period}/${sched.totalPeriods}`,
-						) ||
-							(inc.payment_date === sched.date &&
-								parseFloat(inc.amount) === parseFloat(sched.amount))),
+						(inc.notes?.includes(`parcela ${sched.period}/${sched.totalPeriods}`) ||
+							(inc.payment_date === sched.date && parseFloat(inc.amount) === parseFloat(sched.amount)))
 				);
 				return {
 					...sched,
 					isPaid: !!matchedIncome,
 					paidAmount: matchedIncome ? parseFloat(matchedIncome.amount) : null,
 					paidDate: matchedIncome ? matchedIncome.payment_date : null,
+					incomeId: matchedIncome ? matchedIncome.id : null,
+					type: 'Receita'
 				};
-			})
-		: [];
+			});
+			unifiedSchedule.push(...rentalSchedule);
+		}
 
-	useEffect(() => {
-		if (paymentSchedule.length > 0) {
-			const firstUnpaidIndex = paymentSchedule.findIndex((s) => !s.isPaid);
-			if (firstUnpaidIndex !== -1) {
-				const rowId = `row-sched-${firstUnpaidIndex}`;
-				const element = document.getElementById(rowId);
-				if (element) {
-					element.scrollIntoView({ behavior: "smooth", block: "nearest" });
+		scheduledExpenses.forEach(exp => {
+			unifiedSchedule.push({
+				id: exp.id,
+				date: exp.due_date,
+				amount: exp.amount,
+				isPaid: exp.status === 'Pago',
+				paidDate: exp.status === 'Pago' ? exp.due_date : null,
+				paidAmount: exp.status === 'Pago' ? exp.amount : 0,
+				type: exp.expense_type === 'Reembolso Sinistro' ? 'Receita' : 'Despesa',
+				description: exp.description,
+				period: '-',
+				totalPeriods: '-'
+			});
+		});
+
+		return unifiedSchedule.sort((a, b) => new Date(a.date) - new Date(b.date));
+	}, [activeRental, incomes, scheduledExpenses]);
+
+    const filteredPaymentSchedule = useMemo(() => {
+        return paymentSchedule.filter(sched => {
+            const d = new Date(sched.date + 'T12:00:00');
+            
+            const matchYear = d.getFullYear() === financeYear;
+            const matchMonth = financeMonth === 'all' ? true : (d.getMonth() + 1) === parseInt(financeMonth);
+            const matchType = financeType === 'all' ? true : sched.type === financeType;
+
+            return matchYear && matchMonth && matchType;
+        });
+    }, [paymentSchedule, financeMonth, financeYear, financeType]);
+
+	const handlePayScheduledExpense = async (schedId) => {
+		try {
+			const expense = scheduledExpenses.find(e => e.id === schedId);
+			if (!expense) return;
+
+			setLoading(true);
+			const { data: expData, error: expError } = await supabase.from('expenses').insert([{
+				car_id: car.id,
+				user_id: user.id,
+				expense_type: expense.expense_type,
+				amount: expense.amount,
+				expense_date: expense.due_date,
+				description: expense.description
+			}]).select().single();
+
+			if (expError) throw expError;
+
+			const { error: updError } = await supabase.from('scheduled_expenses').update({
+				status: 'Pago',
+				expense_id: expData.id
+			}).eq('id', schedId);
+
+			if (updError) throw updError;
+
+			fetchData();
+		} catch (error) {
+			console.error('Erro ao pagar despesa agendada', error);
+			alert('Erro ao processar pagamento.');
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleRevertPayment = async (sched) => {
+		if (!window.confirm("Deseja realmente reverter este pagamento? O registro correspondente (gasto ou entrada) será excluído.")) return;
+
+		setLoading(true);
+		try {
+			if (sched.type === 'Despesa') {
+				const { data: seData, error: seError } = await supabase.from('scheduled_expenses').select('expense_id').eq('id', sched.id).single();
+				if (seError) throw seError;
+
+				const { error: updError } = await supabase.from('scheduled_expenses').update({
+					status: 'Pendente',
+					expense_id: null
+				}).eq('id', sched.id);
+				if (updError) throw updError;
+
+				if (seData.expense_id) {
+					const { error: delError } = await supabase.from('expenses').delete().eq('id', seData.expense_id);
+					if (delError) throw delError;
+				}
+			} else {
+				if (sched.incomeId) {
+					const { error: delError } = await supabase.from('incomes').delete().eq('id', sched.incomeId);
+					if (delError) throw delError;
 				}
 			}
+
+			fetchData();
+		} catch (error) {
+			console.error("Erro ao reverter pagamento", error);
+			alert("Erro ao reverter pagamento.");
+		} finally {
+			setLoading(false);
 		}
-	}, [incomes, activeRental?.id]);
+	};
+
+	useEffect(() => {
+		if (activeFinanceTab === "cronograma" && filteredPaymentSchedule.length > 0) {
+			const lastPaidIndex = filteredPaymentSchedule.findLastIndex(s => s.isPaid);
+			let targetItem = null;
+
+			if (lastPaidIndex !== -1 && lastPaidIndex < filteredPaymentSchedule.length - 1) {
+				targetItem = filteredPaymentSchedule[lastPaidIndex + 1];
+			} else if (lastPaidIndex === -1 && filteredPaymentSchedule.length > 0) {
+				targetItem = filteredPaymentSchedule[0];
+			} else if (lastPaidIndex === filteredPaymentSchedule.length - 1) {
+				targetItem = filteredPaymentSchedule[lastPaidIndex];
+			}
+
+			if (targetItem) {
+				const rowId = `row-${targetItem.id}`;
+				setTimeout(() => {
+					const element = document.getElementById(rowId);
+					const container = document.getElementById("cronograma-container");
+					if (element && container) {
+						const containerRect = container.getBoundingClientRect();
+						const elementRect = element.getBoundingClientRect();
+						const scrollTop = container.scrollTop + (elementRect.top - containerRect.top) - (containerRect.height / 2) + (elementRect.height / 2);
+						container.scrollTo({ top: scrollTop, behavior: "smooth" });
+					}
+				}, 100);
+			}
+		}
+	}, [activeFinanceTab, filteredPaymentSchedule]);
 
 	const fetchData = async () => {
 		if (!user || !plate) return;
@@ -176,7 +328,6 @@ export default function CarDetails() {
 			}
 
 			const carData = carsData[0];
-			console.log("Car found:", carData);
 			setCar(carData);
 
 			// 2. Get Rentals
@@ -186,9 +337,10 @@ export default function CarDetails() {
 				.eq("car_id", carData.id)
 				.order("created_at", { ascending: false });
 
+			let activeRentalData = null;
 			if (!rentalsError && rentalsData) {
-				const active = rentalsData.find((r) => r.status === "active");
-				setActiveRental(active || null);
+				activeRentalData = rentalsData.find((r) => r.status === "active");
+				setActiveRental(activeRentalData || null);
 				setRentalsHistory(rentalsData.filter((r) => r.status !== "active"));
 			}
 
@@ -230,17 +382,103 @@ export default function CarDetails() {
 			if (!kmLogsError && kmLogsData) {
 				setKmLogs(kmLogsData);
 			}
+
+			// 6. Get Insurances
+			const { data: insurancesData } = await supabase
+				.from("insurances")
+				.select("*")
+				.eq("car_id", carData.id)
+				.order("created_at", { ascending: false });
+
+			if (insurancesData) setInsurances(insurancesData);
+
+			// 7. Get Scheduled Expenses
+			const { data: scheduledData } = await supabase
+				.from("scheduled_expenses")
+				.select("*")
+				.eq("car_id", carData.id)
+				.order("due_date", { ascending: true });
+
+			if (scheduledData) setScheduledExpenses(scheduledData);
+
+			// 8. Get Rental Incidents
+			if (activeRentalData) {
+				const { data: incidentsData } = await supabase
+					.from("rental_incidents")
+					.select("*")
+					.eq("rental_id", activeRentalData.id)
+					.order("incident_date", { ascending: false });
+				
+				if (incidentsData) setRentalIncidents(incidentsData);
+			}
 		} catch (error) {
 			console.error("Erro ao buscar detalhes do carro:", error);
 			navigate("/dashboard");
 		} finally {
-			setLoading(false);
-		}
+				setLoading(false);
+			}
 	};
 
 	useEffect(() => {
 		fetchData();
 	}, [plate, user?.id]);
+
+    const galleryImages = useMemo(() => {
+		const images = [];
+		if (car?.image_url) images.push({ url: car.image_url, label: "Principal" });
+        if (car?.gallery_urls) {
+            car.gallery_urls.forEach((url, i) => images.push({ url, label: `Foto ${i + 1}` }));
+        }
+        
+        const allRentals = [...rentalsHistory];
+        if (activeRental) allRentals.push(activeRental);
+
+        allRentals.forEach(r => {
+            if (r.start_inspection_urls) {
+                r.start_inspection_urls.forEach(url => images.push({ url, label: `Vistoria Início - ${new Date(r.start_date).toLocaleDateString('pt-BR')}` }));
+            }
+            if (r.end_inspection_urls) {
+                r.end_inspection_urls.forEach(url => images.push({ url, label: `Vistoria Fim - ${new Date(r.expected_end_date).toLocaleDateString('pt-BR')}` }));
+            }
+        });
+
+		return images;
+	}, [car, activeRental, rentalsHistory]);
+
+    const handleUploadGalleryImage = async (e) => {
+		try {
+			const file = e.target.files[0];
+			if (!file) return;
+			setLoading(true);
+
+			const fileExt = file.name.split(".").pop();
+			const fileName = `${Math.random()}.${fileExt}`;
+			const filePath = `${user.id}/${car.id}/gallery/${fileName}`;
+
+			const { error: uploadError } = await supabase.storage
+				.from("rentals") 
+				.upload(filePath, file);
+
+			if (uploadError) throw uploadError;
+
+			const { data: publicUrlData } = supabase.storage
+				.from("rentals")
+				.getPublicUrl(filePath);
+
+			const newUrl = publicUrlData.publicUrl;
+            const updatedGallery = [...(car.gallery_urls || []), newUrl];
+            
+            const { error: updateError } = await supabase.from('cars').update({ gallery_urls: updatedGallery }).eq('id', car.id);
+            if (updateError) throw updateError;
+            
+            fetchData();
+		} catch (error) {
+			console.error("Erro ao subir imagem:", error);
+			alert("Erro ao fazer upload da imagem.");
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	const handleExportAnnual = () => {
 		const months = [
@@ -368,7 +606,7 @@ export default function CarDetails() {
 		const ws = XLSX.utils.aoa_to_sheet(matrix);
 		
 		// Aplica cores e bordas!
-		applyStylesToSheet(ws);
+		// applyStylesToSheet(ws);
 
 		const wb = XLSX.utils.book_new();
 		XLSX.utils.book_append_sheet(wb, ws, car.license_plate ? car.license_plate.toUpperCase() : "Plano Anual");
@@ -442,11 +680,11 @@ export default function CarDetails() {
 	return (
 		<div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 			{/* Cabeçalho da Página e Ações Rápidas integradas */}
-			<div className="flex flex-col md:flex-row md:items-end justify-between gap-6 glass p-6 rounded-3xl border border-border-color shadow-sm">
-				<div>
+			<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+				<div className="w-full md:w-auto">
 					<Link
 						to="/dashboard"
-						className="inline-flex items-center gap-2 text-muted-olive hover:text-primary transition-colors mb-2 text-sm font-bold group">
+						className="inline-flex items-center gap-2 text-muted-olive hover:text-main text-sm font-black uppercase tracking-widest transition-colors mb-2 group">
 						<ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
 						Voltar ao Dashboard
 					</Link>
@@ -480,6 +718,12 @@ export default function CarDetails() {
 					</button>
 
 					<button
+						onClick={() => setIsInsuranceModalOpen(true)}
+						className="bg-accent hover:opacity-90 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20 w-full sm:w-auto">
+						<ShieldCheck className="w-5 h-5" /> Cadastrar Seguro
+					</button>
+
+					<button
 						onClick={handleExportAnnual}
 						className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-main px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 border border-border-color/50 w-full sm:w-auto shadow-sm">
 						<DownloadSimple className="w-5 h-5" />
@@ -487,6 +731,37 @@ export default function CarDetails() {
 					</button>
 				</div>
 			</div>
+
+
+
+			{showInsuranceAlert && (
+				<div className="bg-accent/10 border border-accent/20 p-5 rounded-3xl mb-8 flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-top-4">
+					<div className="p-3 bg-accent/20 rounded-2xl text-accent hidden sm:block">
+						<ShieldCheck className="w-6 h-6" />
+					</div>
+					<div className="flex-1">
+						<h3 className="text-lg font-black text-main flex items-center gap-2 mb-1">
+							<ShieldCheck className="w-5 h-5 text-accent sm:hidden" /> Novo Módulo de Seguros!
+						</h3>
+						<p className="text-sm font-medium text-muted-olive leading-relaxed mb-3">
+							Notamos que você já possui lançamentos de "Seguro". Centralizamos isso! Use o botão <strong className="text-accent">Cadastrar Seguro</strong> ali em cima. 
+							A partir de agora, os seguros ganham um card próprio abaixo do contrato, permitindo que você atrele os **Sinistros** diretamente à apólice ou desconte do caução.
+						</p>
+						<button onClick={() => {
+							setShowInsuranceAlert(false);
+							localStorage.setItem('seen_insurance_popup', 'true');
+						}} className="text-xs font-black uppercase tracking-widest text-accent hover:text-main transition-colors">
+							Ok, entendi!
+						</button>
+					</div>
+					<button onClick={() => {
+						setShowInsuranceAlert(false);
+						localStorage.setItem('seen_insurance_popup', 'true');
+					}} className="text-muted-olive hover:text-main transition-colors p-1">
+						<X className="w-5 h-5" />
+					</button>
+				</div>
+			)}
 
 			{/* Indicadores de Desempenho (KPIs) */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -556,7 +831,7 @@ export default function CarDetails() {
 				<div className="lg:col-span-1 space-y-8">
 					{/* Card Info do Carro */}
 					<div className="glass rounded-2xl p-6 border border-border-color shadow-sm">
-						<div className="flex justify-between items-center mb-4">
+						<div className="flex justify-between items-center mb-6">
 							<h3 className="text-lg font-semibold flex items-center gap-2">
 								<Car className="w-5 h-5 text-accent" />
 								Detalhes do Veículo
@@ -568,7 +843,70 @@ export default function CarDetails() {
 							</button>
 						</div>
 
-						<div className="space-y-4">
+						{/* Galeria de Fotos Miniatura */}
+						<div className="mb-6">
+							<div className="flex items-center justify-between mb-3">
+								<h4 className="text-[10px] font-black uppercase tracking-widest text-muted-olive flex items-center gap-1.5">
+									<Camera className="w-3 h-3" /> Galeria
+								</h4>
+								<label className="cursor-pointer px-2 py-1 bg-primary/10 text-primary hover:bg-primary/20 transition-colors rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
+									<Camera className="w-2.5 h-2.5" /> ADD
+									<input type="file" accept="image/*" onChange={handleUploadGalleryImage} className="hidden" />
+								</label>
+							</div>
+							
+							{galleryImages.length > 0 ? (
+								<div className="relative w-full h-44 rounded-xl overflow-hidden group bg-slate-100 dark:bg-slate-800 border border-border-color/50 shadow-sm">
+									<img 
+										src={galleryImages[currentGalleryIndex]?.url} 
+										alt={galleryImages[currentGalleryIndex]?.label} 
+										className="w-full h-full object-cover transition-opacity duration-300"
+									/>
+									
+									{/* Label Overlay & Indicators */}
+									<div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col items-center justify-end">
+										<p className="text-[10px] text-white font-bold uppercase tracking-widest leading-tight mb-2 text-center drop-shadow-md">
+											{galleryImages[currentGalleryIndex]?.label}
+										</p>
+										
+										{/* Indicators */}
+										{galleryImages.length > 1 && (
+											<div className="flex gap-1.5 items-center">
+												{galleryImages.map((_, i) => (
+													<button 
+														key={i} 
+														onClick={() => setCurrentGalleryIndex(i)}
+														className={`h-1.5 rounded-full transition-all duration-300 ${i === currentGalleryIndex ? 'w-5 bg-white' : 'w-2 bg-white/40 hover:bg-white/60'}`}
+													/>
+												))}
+											</div>
+										)}
+									</div>
+
+									{/* Navigation Arrows */}
+									{galleryImages.length > 1 && (
+										<>
+											<button 
+												onClick={handlePrevImage}
+												className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 shadow-md">
+												<CaretLeft weight="bold" className="w-5 h-5" />
+											</button>
+											<button 
+												onClick={handleNextImage}
+												className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 shadow-md">
+												<CaretRight weight="bold" className="w-5 h-5" />
+											</button>
+										</>
+									)}
+								</div>
+							) : (
+								<div className="glass rounded-xl p-4 border border-border-color text-center border-dashed">
+									<p className="text-[10px] text-muted-olive font-medium">Nenhuma foto adicionada.</p>
+								</div>
+							)}
+						</div>
+
+						<div className="space-y-4 pt-2 border-t border-border-color">
 							<div className="flex justify-between items-center pb-3 border-b border-border-color">
 								<span className="text-muted-olive text-sm font-medium">
 									Ano
@@ -639,8 +977,8 @@ export default function CarDetails() {
 								kmHistory.map((record) => (
 									<div
 										key={record.id}
-										className="flex flex-wrap justify-between items-center gap-2 p-3 rounded-xl bg-primary/5 border border-border-color">
-										<div>
+										className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 p-3 rounded-xl bg-primary/5 border border-border-color">
+										<div className="flex-shrink-0 whitespace-nowrap">
 											<p className="font-bold text-main">
 												{record.km.toLocaleString()}{" "}
 												<span className="text-xs font-medium text-muted-olive">
@@ -651,11 +989,19 @@ export default function CarDetails() {
 												{new Date(record.date).toLocaleDateString("pt-BR")}
 											</p>
 										</div>
-										<div className="text-left mt-1 sm:mt-0 sm:text-right">
+										<div className="flex flex-1 items-center gap-2 w-full justify-start sm:justify-end min-w-0">
 											<span
-												className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md inline-block whitespace-nowrap ${record.type === "start" ? "bg-primary/20 text-primary" : "bg-accent/20 text-accent"}`}>
+												className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md text-left sm:text-right break-words whitespace-normal line-clamp-2 max-w-full ${record.type === "start" ? "bg-primary/20 text-primary" : "bg-accent/20 text-accent"}`}
+												title={record.label}>
 												{record.label}
 											</span>
+                                            {record.type === "log" && (
+                                                <button 
+                                                    onClick={() => setEditingKm(record)}
+                                                    className="p-1.5 rounded-lg bg-bg-main border border-border-color text-muted-olive hover:text-main transition-colors shrink-0">
+                                                    <PencilSimple className="w-3 h-3" />
+                                                </button>
+                                            )}
 										</div>
 									</div>
 								))
@@ -782,51 +1128,89 @@ export default function CarDetails() {
 
 								<div className="space-y-4">
 									{(() => {
-										const rentStart = new Date(activeRental.start_date);
-										const rentEnd = new Date(activeRental.expected_end_date);
-										const today = new Date();
-                                        
-                                        const totalDays = Math.max(1, Math.ceil((rentEnd - rentStart) / (1000 * 60 * 60 * 24)));
-                                        const currentDays = Math.max(0, Math.ceil((today - rentStart) / (1000 * 60 * 60 * 24)));
-                                        const progressPercent = Math.min(100, Math.max(0, (currentDays / totalDays) * 100));
+										const now = new Date();
+										const start = new Date(activeRental.start_date.includes('T') ? activeRental.start_date : activeRental.start_date + 'T12:00:00');
+										const end = new Date(activeRental.expected_end_date.includes('T') ? activeRental.expected_end_date : activeRental.expected_end_date + 'T12:00:00');
+										const totalDays = Math.max(1, (end - start) / (1000 * 60 * 60 * 24));
+										const daysPassed = (now - start) / (1000 * 60 * 60 * 24);
+										const progressPercent = Math.min(100, Math.max(0, (daysPassed / totalDays) * 100));
+
+										const daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+										let timeLeftText = "";
+										let isOverdue = false;
+										if (daysLeft < 0) {
+											timeLeftText = `Atrasado há ${Math.abs(daysLeft)} dias`;
+											isOverdue = true;
+										} else if (daysLeft === 0) {
+											timeLeftText = "Termina hoje";
+										} else if (daysLeft < 7) {
+											timeLeftText = `Faltam ${daysLeft} dia(s)`;
+										} else {
+											const weeksLeft = Math.floor(daysLeft / 7);
+											const extraDays = daysLeft % 7;
+											timeLeftText = `Faltam ${weeksLeft} sem e ${extraDays} dias`;
+										}
 
 										return (
-											<div className="bg-white/60 dark:bg-slate-900/60 p-5 rounded-2xl border border-border-color shadow-sm space-y-4">
-												<div className="flex justify-between items-center">
-													<div>
-														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Início do Contrato</p>
-														<p className="font-black text-main">{rentStart.toLocaleDateString("pt-BR", { timeZone: "UTC" })}</p>
+											<div className="space-y-4">
+												{/* Progresso do Contrato */}
+												<div className="bg-white/5 p-4 rounded-xl border border-border-color">
+													<div className="flex justify-between items-center mb-2">
+														<p className="text-[10px] uppercase font-black tracking-widest text-muted-olive">Progresso do Contrato</p>
+														<p className={`text-[10px] font-black uppercase tracking-widest ${isOverdue ? 'text-danger' : 'text-primary'}`}>
+															{timeLeftText}
+														</p>
 													</div>
-													<div className="text-right">
-														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Devolução Prevista</p>
-														<p className="font-black text-main">{rentEnd.toLocaleDateString("pt-BR", { timeZone: "UTC" })}</p>
+													<div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+														<div 
+															className={`h-full rounded-full ${isOverdue ? 'bg-danger' : 'bg-primary'}`} 
+															style={{ width: `${progressPercent}%` }}
+														></div>
+													</div>
+													<div className="flex justify-between items-center mt-2 text-xs font-bold text-main">
+														<span>{start.toLocaleDateString('pt-BR')}</span>
+														<span>{end.toLocaleDateString('pt-BR')}</span>
 													</div>
 												</div>
-                                                
-                                                <div className="space-y-1.5">
-                                                    <div className="flex justify-between text-[10px] font-bold text-muted-olive uppercase">
-                                                        <span>Progresso do Aluguel</span>
-                                                        <span>{Math.floor(progressPercent)}% concluído</span>
-                                                    </div>
-                                                    <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-                                                        <div className="bg-primary h-2 rounded-full transition-all duration-1000" style={{ width: `${progressPercent}%` }}></div>
-                                                    </div>
-                                                    <p className="text-right text-[10px] font-bold text-muted-olive">Restam {Math.max(0, totalDays - currentDays)} dias</p>
-                                                </div>
+												
+												{/* Valor Total do Contrato */}
+												<div className="bg-white/5 p-3 rounded-xl border border-border-color/50 flex justify-between items-center">
+													<p className="text-[10px] uppercase font-black tracking-widest text-muted-olive flex items-center gap-1.5"><CurrencyDollar className="w-3.5 h-3.5" /> Valor Total do Contrato</p>
+													<p className="font-black text-primary text-sm">R$ {Number(activeRental.total_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+												</div>
 
-												<div className="pt-3 border-t border-border-color/50 flex justify-between items-center">
-													<div>
-														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Status</p>
-														<p className="font-black text-accent">Em Andamento</p>
+												{/* Caução se existir */}
+												{activeRental.security_deposit > 0 && (
+													<div className="bg-white/5 p-3 rounded-xl border border-border-color/50 flex justify-between items-center">
+														<p className="text-[10px] uppercase font-black tracking-widest text-muted-olive">Caução Retido</p>
+														<p className="font-bold text-main text-sm">R$ {Number(activeRental.security_deposit).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
 													</div>
-													<div className="text-right">
-														<p className="text-[10px] text-muted-olive uppercase font-bold mb-1">Valor Total</p>
-														<p className="font-black text-primary text-lg">R$ {Number(activeRental.total_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
-													</div>
-												</div>
+												)}
 											</div>
-										)
+										);
 									})()}
+
+									{/* Rental Incidents (Sinistros) */}
+									{rentalIncidents.length > 0 && (
+										<div className="mt-4 pt-4 border-t border-border-color">
+											<p className="text-[10px] uppercase font-black tracking-widest text-danger mb-3 flex items-center gap-1">
+												<WarningOctagon className="w-3 h-3" /> Sinistros Registrados neste Aluguel
+											</p>
+											<div className="space-y-2">
+												{rentalIncidents.map(incident => (
+													<div key={incident.id} className="bg-danger/5 border border-danger/20 p-3 rounded-xl flex justify-between items-center">
+														<div>
+															<p className="text-xs font-bold text-main">{incident.description}</p>
+															<p className="text-[10px] text-muted-olive">{new Date(incident.incident_date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+														</div>
+														<p className="text-sm font-black text-danger">
+															- R$ {parseFloat(incident.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+														</p>
+													</div>
+												))}
+											</div>
+										</div>
+									)}
 								</div>
 							</div>
 						</div>
@@ -848,33 +1232,104 @@ export default function CarDetails() {
 						</div>
 					)}
 
+					{/* Card de Seguro */}
+					{insurances.length > 0 && (() => {
+						const currentInsurance = insurances[0];
+						const isExpired = new Date(currentInsurance.end_date + 'T23:59:59') < new Date();
+
+						return (
+							<div className="glass rounded-2xl p-6 border border-border-color shadow-sm mt-8">
+								<div className="flex justify-between items-center mb-6">
+									<h3 className="text-lg font-semibold flex items-center gap-2">
+										<ShieldCheck className="w-5 h-5 text-accent" />
+										Seguro do Veículo
+									</h3>
+									{!isExpired && (
+										<button
+											onClick={() => setIsIncidentModalOpen(true)}
+											className="p-1.5 px-3 rounded-lg bg-danger/10 hover:bg-danger/20 text-danger transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest border border-danger/20">
+											<WarningOctagon className="w-3 h-3"/> Registrar Sinistro
+										</button>
+									)}
+								</div>
+								
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-accent/5 p-4 rounded-2xl border border-accent/10">
+									<div>
+										<p className="text-[10px] uppercase font-black tracking-widest text-muted-olive mb-1">Seguradora</p>
+										<p className="font-bold text-main text-lg">{currentInsurance.company_name}</p>
+									</div>
+									<div>
+										<p className="text-[10px] uppercase font-black tracking-widest text-muted-olive mb-1">Validade</p>
+										<p className={`font-bold text-sm ${isExpired ? 'text-danger' : 'text-main'}`}>
+											{new Date(currentInsurance.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}
+											{isExpired && ' (Vencido)'}
+										</p>
+										<p className="text-xs text-muted-olive">Total: R$ {parseFloat(currentInsurance.total_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+									</div>
+								</div>
+							</div>
+						)
+					})()}
 
 				</div>
 			</div>
 
 					{/* Abas de Fluxo Financeiro Detalhado */}
 					<div className="glass rounded-3xl p-6 border border-border-color shadow-sm">
-                        <div className="flex flex-col sm:flex-row bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl mb-6 gap-1">
-							<button
-								onClick={() => setActiveFinanceTab("cronograma")}
-								className={`flex-1 py-3 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 rounded-xl ${activeFinanceTab === "cronograma" ? "bg-white dark:bg-slate-700 text-accent shadow-sm" : "text-muted-olive hover:text-accent hover:bg-white/50"}`}>
-								<Calendar className="w-4 h-4" /> Cronograma
-							</button>
-							<button
-								onClick={() => setActiveFinanceTab("gastos")}
-								className={`flex-1 py-3 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 rounded-xl ${activeFinanceTab === "gastos" ? "bg-white dark:bg-slate-700 text-danger shadow-sm" : "text-muted-olive hover:text-danger hover:bg-white/50"}`}>
-								<Wrench className="w-4 h-4" /> Gastos
-							</button>
-							<button
-								onClick={() => setActiveFinanceTab("receitas")}
-								className={`flex-1 py-3 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 rounded-xl ${activeFinanceTab === "receitas" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-muted-olive hover:text-primary hover:bg-white/50"}`}>
-								<CurrencyDollar className="w-4 h-4" /> Receitas
-							</button>
+						<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                            <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl w-full sm:w-auto overflow-x-auto no-scrollbar">
+                                <button
+                                    onClick={() => setActiveFinanceTab("cronograma")}
+                                    className={`flex-1 py-3 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 rounded-xl whitespace-nowrap ${activeFinanceTab === "cronograma" ? "bg-white dark:bg-slate-700 text-accent shadow-sm" : "text-muted-olive hover:text-accent hover:bg-white/50"}`}>
+                                    <Calendar className="w-4 h-4" /> Cronograma
+                                </button>
+                                <button
+                                    onClick={() => setActiveFinanceTab("gastos")}
+                                    className={`flex-1 py-3 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 rounded-xl whitespace-nowrap ${activeFinanceTab === "gastos" ? "bg-white dark:bg-slate-700 text-danger shadow-sm" : "text-muted-olive hover:text-danger hover:bg-white/50"}`}>
+                                    <Wrench className="w-4 h-4" /> Gastos
+                                </button>
+                                <button
+                                    onClick={() => setActiveFinanceTab("receitas")}
+                                    className={`flex-1 py-3 px-4 text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 rounded-xl whitespace-nowrap ${activeFinanceTab === "receitas" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-muted-olive hover:text-primary hover:bg-white/50"}`}>
+                                    <CurrencyDollar className="w-4 h-4" /> Receitas
+                                </button>
+                            </div>
+                            
+                            {activeFinanceTab === "cronograma" && (
+                                <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+                                    <select value={financeType} onChange={e => setFinanceType(e.target.value)} className="flex-1 sm:w-auto bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-xs font-bold text-main outline-none focus:ring-2 focus:ring-accent cursor-pointer dark:[color-scheme:dark]">
+                                        <option value="all">Todos</option>
+                                        <option value="Receita">Receitas</option>
+                                        <option value="Despesa">Despesas</option>
+                                    </select>
+                                    <select value={financeMonth} onChange={e => setFinanceMonth(e.target.value)} className="flex-1 sm:w-auto bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-xs font-bold text-main outline-none focus:ring-2 focus:ring-accent cursor-pointer dark:[color-scheme:dark]">
+                                        <option value="all">Ano Todo</option>
+                                        <option value="1">Janeiro</option>
+                                        <option value="2">Fevereiro</option>
+                                        <option value="3">Março</option>
+                                        <option value="4">Abril</option>
+                                        <option value="5">Maio</option>
+                                        <option value="6">Junho</option>
+                                        <option value="7">Julho</option>
+                                        <option value="8">Agosto</option>
+                                        <option value="9">Setembro</option>
+                                        <option value="10">Outubro</option>
+                                        <option value="11">Novembro</option>
+                                        <option value="12">Dezembro</option>
+                                    </select>
+                                    <select value={financeYear} onChange={e => setFinanceYear(parseInt(e.target.value))} className="flex-1 sm:w-auto bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-xs font-bold text-main outline-none focus:ring-2 focus:ring-accent cursor-pointer dark:[color-scheme:dark]">
+                                        <option value={new Date().getFullYear() - 1}>{new Date().getFullYear() - 1}</option>
+                                        <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
+                                        <option value={new Date().getFullYear() + 1}>{new Date().getFullYear() + 1}</option>
+                                        <option value={new Date().getFullYear() + 2}>{new Date().getFullYear() + 2}</option>
+                                    </select>
+                                </div>
+                            )}
 						</div>
 
 						<div className="p-0 bg-white/60 dark:bg-slate-950/40 rounded-2xl overflow-hidden border border-border-color/50">
 							{activeFinanceTab === "cronograma" ? (
-								<div className="overflow-x-auto">
+								<div id="cronograma-container" className="overflow-auto max-h-[500px] scrollbar-thin">
 									<table className="w-full text-left">
 										<thead className="bg-bg-main/30 border-b border-border-color">
 											<tr className="text-[10px] uppercase font-black tracking-widest text-muted-olive">
@@ -886,16 +1341,16 @@ export default function CarDetails() {
 											</tr>
 										</thead>
 										<tbody className="text-sm">
-											{paymentSchedule.length === 0 ? (
+											{filteredPaymentSchedule.length === 0 ? (
 												<tr>
 													<td
 														colSpan="5"
 														className="py-8 text-center italic text-muted-olive">
-														Nenhum contrato ativo para gerar cronograma.
+														Nenhum lançamento encontrado para este período.
 													</td>
 												</tr>
 											) : (
-												paymentSchedule.map((sched) => (
+												filteredPaymentSchedule.map((sched) => (
 													<tr
 														key={sched.id}
 														id={`row-${sched.id}`}
@@ -925,9 +1380,13 @@ export default function CarDetails() {
 															)}
 														</td>
 														<td className="py-4 px-6 text-muted-olive text-xs">
-															{sched.period}/{sched.totalPeriods}
+															{sched.type === 'Despesa' ? (
+                                                                <span className="break-words whitespace-normal max-w-[200px] inline-block leading-snug">{sched.description}</span>
+                                                            ) : (
+                                                                `${sched.period}/${sched.totalPeriods}`
+                                                            )}
 														</td>
-														<td className="py-4 px-6 font-bold text-main">
+														<td className={`py-4 px-6 font-bold ${sched.type === 'Despesa' ? 'text-danger' : 'text-primary'}`}>
 															{sched.isPaid &&
 															sched.paidAmount !== sched.amount ? (
 																<div className="flex flex-col leading-tight">
@@ -967,25 +1426,49 @@ export default function CarDetails() {
 																	Pendente
 																</span>
 															)}
+                                                            <div className="mt-1 text-[9px] uppercase font-black tracking-widest text-muted-olive">{sched.type === 'Despesa' ? 'Saída' : 'Entrada'}</div>
 														</td>
 														<td className="py-4 px-6">
 															{!sched.isPaid ? (
-																<button
-																	onClick={() => {
-																		setInitialIncomeData({
-																			date: sched.date,
-																			amount: sched.amount,
-																			notes: `Pagamento da parcela ${sched.period}/${sched.totalPeriods} do aluguel ativo.`,
-																		});
-																		setIsIncomeModalOpen(true);
-																	}}
-																	className="bg-accent hover:bg-accent/90 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-sm shadow-accent/20 transition-all flex items-center gap-1">
-																	<CurrencyDollar className="w-3 h-3" /> Lançar
-																</button>
+                                                                sched.type === 'Despesa' ? (
+                                                                    <div className="flex items-center gap-2">
+                                                                        <button
+                                                                            onClick={() => handlePayScheduledExpense(sched.id)}
+                                                                            className="bg-danger hover:bg-danger/90 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-sm shadow-danger/20 transition-all flex items-center gap-1">
+                                                                            <CheckCircle className="w-3 h-3" /> Pagar
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => setEditingScheduledExpense(sched)}
+                                                                            className="p-1.5 rounded-lg bg-bg-main border border-border-color text-muted-olive hover:text-main transition-colors">
+                                                                            <PencilSimple className="w-3 h-3" />
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setInitialIncomeData({
+                                                                                date: sched.date,
+                                                                                amount: sched.amount,
+                                                                                notes: `Pagamento da parcela ${sched.period}/${sched.totalPeriods} do aluguel ativo.`,
+                                                                            });
+                                                                            setIsIncomeModalOpen(true);
+                                                                        }}
+                                                                        className="bg-accent hover:bg-accent/90 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-sm shadow-accent/20 transition-all flex items-center gap-1">
+                                                                        <CurrencyDollar className="w-3 h-3" /> Receber
+                                                                    </button>
+                                                                )
 															) : (
-																<span className="text-[10px] uppercase font-bold text-muted-olive">
-																	Confirmado
-																</span>
+																<div className="flex items-center gap-2">
+																	<span className="text-[10px] uppercase font-bold text-muted-olive">
+																		Confirmado
+																	</span>
+																	<button 
+																		onClick={() => handleRevertPayment(sched)}
+																		className="p-1.5 rounded-lg bg-bg-main border border-border-color text-muted-olive hover:text-danger hover:border-danger/30 hover:bg-danger/5 transition-all"
+																		title="Reverter Pagamento">
+																		<ArrowCounterClockwise className="w-3.5 h-3.5" />
+																	</button>
+																</div>
 															)}
 														</td>
 													</tr>
@@ -1200,6 +1683,23 @@ export default function CarDetails() {
 				/>
 			)}
 
+			{isInsuranceModalOpen && (
+				<InsuranceModal
+					car={car}
+					onClose={() => setIsInsuranceModalOpen(false)}
+					onSuccess={fetchData}
+				/>
+			)}
+
+			{isIncidentModalOpen && (
+				<IncidentModal
+					car={car}
+					activeRental={activeRental}
+					onClose={() => setIsIncidentModalOpen(false)}
+					onSuccess={fetchData}
+				/>
+			)}
+
 			{isIncomeModalOpen && activeRental && (
 				<IncomeModal
 					rental={activeRental}
@@ -1235,6 +1735,14 @@ export default function CarDetails() {
 				/>
 			)}
 
+			{editingScheduledExpense && (
+				<EditScheduledExpenseModal
+					expense={editingScheduledExpense}
+					onClose={() => setEditingScheduledExpense(null)}
+					onSuccess={fetchData}
+				/>
+			)}
+
 			{editingIncome && (
 				<EditIncomeModal
 					income={editingIncome}
@@ -1249,10 +1757,14 @@ export default function CarDetails() {
 				/>
 			)}
 
-			{isAddKmModalOpen && (
+			{(isAddKmModalOpen || editingKm) && (
 				<AddKmModal
 					car={car}
-					onClose={() => setIsAddKmModalOpen(false)}
+                    kmLog={editingKm}
+					onClose={() => {
+                        setIsAddKmModalOpen(false);
+                        setEditingKm(null);
+                    }}
 					onSuccess={fetchData}
 				/>
 			)}
