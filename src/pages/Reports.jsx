@@ -174,7 +174,10 @@ export default function Reports() {
   }, [filteredData])
 
   const scheduledExpensesTableData = useMemo(() => {
-    const fScheduled = scheduledExpenses.filter(exp => selectedParcelCarId === 'all' || exp.car_id === selectedParcelCarId)
+    const fScheduled = scheduledExpenses.filter(exp => 
+        (selectedParcelCarId === 'all' || exp.car_id === selectedParcelCarId) &&
+        (exp.description && /parcela/i.test(exp.description))
+    )
     const grouped = {}
 
     fScheduled.forEach(exp => {
@@ -222,7 +225,7 @@ export default function Reports() {
         </div>
 
         {/* Filters */}
-        <div className="glass rounded-2xl p-4 mb-8 border border-border-color flex flex-col sm:flex-row items-center gap-4">
+        <div className="glass rounded-2xl p-4 mb-8 border border-border-color flex flex-col sm:flex-row items-center gap-4 tour-reports-filters">
           <div className="flex bg-primary/5 rounded-xl p-1 border border-border-color w-full sm:w-auto">
             <button onClick={() => setFilterPeriod('month')} className={`flex-1 sm:flex-none px-6 py-2 text-[10px] font-black rounded-lg transition-all ${filterPeriod === 'month' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>MENSAL</button>
             <button onClick={() => setFilterPeriod('year')} className={`flex-1 sm:flex-none px-6 py-2 text-[10px] font-black rounded-lg transition-all ${filterPeriod === 'year' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>ANUAL</button>
@@ -287,7 +290,7 @@ export default function Reports() {
         </div>
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 tour-reports-charts">
           {/* Financial Performance */}
           <div className="glass rounded-3xl p-6 md:p-8 flex flex-col">
             <h3 className="text-xl font-black flex items-center gap-3 mb-8">
@@ -295,7 +298,7 @@ export default function Reports() {
               Desempenho Financeiro
             </h3>
             <div className="h-[300px] w-full min-h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={financialChartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#8d2036' }} />
@@ -319,7 +322,7 @@ export default function Reports() {
             </h3>
             <div className="h-[300px] w-full min-h-[300px] flex flex-col md:flex-row items-center">
               <div className="w-full h-full md:w-1/2">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
                       data={expenseCategoryData}
@@ -357,7 +360,7 @@ export default function Reports() {
               Duração dos Aluguéis
             </h3>
             <div className="h-[300px] w-full min-h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={rentalDurationData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.1} />
                   <XAxis type="number" hide />
@@ -408,7 +411,7 @@ export default function Reports() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <h3 className="text-xl font-black flex items-center gap-3">
               <Calendar className="w-6 h-6 text-danger" />
-              Gastos Parcelados ({selectedParcelYear})
+              Gastos Parcelados
             </h3>
             
             <div className="flex items-center gap-2">

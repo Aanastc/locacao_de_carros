@@ -135,12 +135,22 @@ export default function Dashboard() {
       const activeRentals = []
       
       carsData?.forEach(car => {
-        // Maintenance Alert (Simple check: every 10k km)
-        if (car.current_km && car.current_km % 10000 > 9000) {
+        // Maintenance Alert
+        if (car.next_revision_km) {
+          if (car.current_km >= (car.next_revision_km - 1000)) {
+            const overdue = car.current_km >= car.next_revision_km;
+            newAlerts.push({
+              type: 'maintenance',
+              title: overdue ? 'Revisão Atrasada' : 'Revisão Próxima',
+              desc: `${car.brand} ${car.model} está com ${car.current_km.toLocaleString()} km (Revisão: ${car.next_revision_km.toLocaleString()} km)`,
+              carPlate: car.license_plate
+            })
+          }
+        } else if (car.current_km && car.current_km % 10000 > 9000) {
           newAlerts.push({
             type: 'maintenance',
             title: 'Revisão Próxima',
-            desc: `${car.brand} ${car.model} está com ${car.current_km.toLocaleString()} km`,
+            desc: `${car.brand} ${car.model} está com ${car.current_km.toLocaleString()} km. Atualize a 'Próxima Revisão' no cadastro.`,
             carPlate: car.license_plate
           })
         }
@@ -204,7 +214,8 @@ export default function Dashboard() {
       const activeRents = carsData?.flatMap(c => c.rentals || []).filter(r => r.status === 'active')
       
       activeRents.forEach(rent => {
-        if (rent.payment_status === 'Pendente') {
+        const hasIncome = incData.some(inc => inc.rental_id === rent.id)
+        if (rent.payment_status === 'Pendente' && !hasIncome) {
           const car = carsData.find(c => c.id === rent.car_id)
           paymentAlerts.push({
             type: 'payment_pending',
@@ -569,7 +580,7 @@ export default function Dashboard() {
                 <button onClick={handleExportAnnual} className="p-3 bg-white/40 dark:bg-slate-800/40 rounded-2xl border border-border-color/50 hover:bg-primary/10 hover:text-primary transition-all active:scale-95 shadow-lg shadow-black/5" title="Exportar Excel">
                   <DownloadSimple weight="bold" className="w-5 h-5" />
                 </button>
-                <button onClick={() => setShowAddForm(true)} className="bg-primary text-white px-6 py-4 rounded-3xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:translate-y-[-2px] transition-all flex items-center gap-2">
+                <button onClick={() => setShowAddForm(true)} className="bg-primary text-white px-6 py-4 rounded-3xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:translate-y-[-2px] transition-all flex items-center gap-2 tour-add-car-btn">
                   <Plus weight="bold" className="w-4 h-4" /> Novo Veículo
                 </button>
               </div>
@@ -578,7 +589,7 @@ export default function Dashboard() {
 
 
             {/* Quick Stats - Minimalist */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 tour-dashboard-stats">
               <div className="relative group p-6 glass rounded-3xl border border-border-color/50">
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-olive mb-3">Gastos {filterPeriod === 'month' ? '(Mês)' : '(Ano)'}</p>
                 <h3 className="text-3xl font-black tracking-tighter text-danger">
@@ -624,7 +635,7 @@ export default function Dashboard() {
                   </div>
                   
                   <div className="h-[320px] w-full min-h-[320px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={320}>
                       <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.05} />
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: '700', fill: 'var(--text-muted)' }} dy={10} />
@@ -641,7 +652,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Fleet Summary - Extra Clean */}
-                <div className="glass rounded-[2.5rem] p-6 sm:p-10 border border-border-color/50">
+                <div className="glass rounded-[2.5rem] p-6 sm:p-10 border border-border-color/50 tour-cars-list">
                   <div className="flex items-center justify-between mb-8">
                     <h3 className="text-2xl font-black tracking-tight text-main">Frota</h3>
                     <Link to="/cars" className="bg-primary/10 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all flex items-center gap-2">
@@ -723,30 +734,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Recent Activity - Extra Clean */}
-                <div className="bg-white/20 dark:bg-slate-900/20 rounded-[2rem] p-6 border border-border-color/30">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-6 text-main">Atividade</h3>
-                  <div className="space-y-6">
-                    {recentActivity.length === 0 ? (
-                      <p className="text-[10px] font-bold text-muted-olive/50 text-center py-6 italic">Sem atividades recentes.</p>
-                    ) : (
-                      recentActivity.map((act, idx) => (
-                        <div key={idx} className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className={`w-1.5 h-1.5 rounded-full ${act.activityType === 'income' ? 'bg-success shadow-[0_0_8px_rgba(var(--success),0.5)]' : 'bg-danger'}`}></div>
-                            <div>
-                              <p className="text-xs font-black truncate max-w-[100px] text-main">{act.rentals?.client_name || act.expense_type}</p>
-                              <p className="text-[9px] text-muted-olive font-bold uppercase">{format(new Date(act.payment_date || act.expense_date), 'dd MMM', { locale: ptBR })}</p>
-                            </div>
-                          </div>
-                          <span className={`text-xs font-black ${act.activityType === 'income' ? 'text-success' : 'text-danger'}`}>
-                            {act.activityType === 'income' ? '+' : '-'} R$ {act.amount}
-                          </span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+
               </div>
             </div>
           </>

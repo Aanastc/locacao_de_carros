@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 import { 
-  Car, SignOut, User, Sun, Moon, ChartBar, Layout, List, X, House
+  Car, SignOut, User, Sun, Moon, ChartBar, Layout, List, X, House, PlayCircle
 } from '@phosphor-icons/react'
 
 export default function Navbar() {
@@ -54,7 +54,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo & Desktop Nav */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-8 tour-navbar-logo">
             <Link to="/dashboard" className="flex items-center gap-3 active:scale-95 transition-transform">
               <img src="/logo.jpeg" alt="Logo" className="h-10 w-auto object-contain rounded-lg" />
             </Link>
@@ -98,7 +98,7 @@ export default function Navbar() {
             {/* Profile Link */}
             <Link 
               to="/profile" 
-              className={`flex items-center gap-2 text-sm transition-colors glass p-1 sm:py-1.5 sm:px-3 rounded-full border hover:border-primary/50 ${
+              className={`flex items-center gap-2 text-sm transition-colors glass p-1 sm:py-1.5 sm:px-3 rounded-full border hover:border-primary/50 tour-user-menu ${
                 isActive('/profile') ? 'border-primary/50 text-primary' : 'border-border-color text-muted-olive'
               }`}
             >
@@ -154,7 +154,7 @@ export default function Navbar() {
                 {link.name}
               </Link>
             ))}
-            <div className="pt-4 border-t border-border-color">
+            <div className="pt-4 border-t border-border-color space-y-2">
               <button 
                 onClick={handleSignOut}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-danger hover:bg-danger/10 transition-all font-black text-base"

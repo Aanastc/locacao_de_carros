@@ -170,11 +170,19 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 			const diffHours = diffMs / (1000 * 60 * 60);
 			const diffDays = Math.max(1, Math.ceil(diffHours / 24));
 
-			let multiplier = diffDays;
-			let text = `Duração: ${diffDays} dia${diffDays > 1 ? "s" : ""}`;
+			let multiplier = 1;
+			let text = "";
 
-			multiplier = Math.ceil(diffDays / 7);
-			text = `Duração: ${multiplier} semana${multiplier > 1 ? "s" : "" + 1}`;
+			if (formData.rental_model === "Por Dia") {
+				multiplier = diffDays;
+				text = `Duração: ${multiplier} dia${multiplier > 1 ? "s" : ""}`;
+			} else if (formData.rental_model === "Por Mês") {
+				multiplier = Math.ceil(diffDays / 30);
+				text = `Duração: ${multiplier} mês(es)`;
+			} else {
+				multiplier = Math.ceil(diffDays / 7);
+				text = `Duração: ${multiplier} semana${multiplier > 1 ? "s" : ""}`;
+			}
 
 			setDurationText(text);
 
@@ -951,9 +959,16 @@ export default function RentCarModal({ car, onClose, onSuccess }) {
 										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">
 											Modelo de Aluguel
 										</label>
-										<div className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main font-bold">
-											Por Semana
-										</div>
+										<select
+											name="rental_model"
+											value={formData.rental_model}
+											onChange={handleChange}
+											className="w-full bg-slate-50 dark:bg-slate-800/50 border border-border-color rounded-2xl px-4 py-3 text-main font-bold focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-accent/10 focus:border-accent hover:border-accent/50 outline-none transition-all shadow-sm appearance-none cursor-pointer"
+										>
+											<option value="Por Dia">Por Dia</option>
+											<option value="Por Semana">Por Semana</option>
+											<option value="Por Mês">Por Mês</option>
+										</select>
 									</div>
 									<div className="space-y-1.5">
 										<label className="text-xs font-bold text-slate-700 dark:text-muted-olive uppercase tracking-wider ml-1">

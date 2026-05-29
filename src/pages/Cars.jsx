@@ -106,7 +106,7 @@ export default function Cars() {
           
           <button 
             onClick={() => setShowAddForm(true)}
-            className="bg-primary text-white px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3"
+            className="bg-primary text-white px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3 tour-cars-add"
           >
             <Plus weight="bold" className="w-5 h-5" /> Novo Carro
           </button>
@@ -114,7 +114,7 @@ export default function Cars() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 mb-10 items-center justify-between">
+      <div className="flex flex-col md:flex-row gap-4 mb-10 items-center justify-between tour-cars-search">
         <div className="relative w-full md:max-w-md">
           <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-olive w-5 h-5" />
           <input 

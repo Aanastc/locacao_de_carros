@@ -177,7 +177,7 @@ export default function Profile() {
 
           <div className="flex flex-col sm:flex-row gap-12 items-start">
             
-            <div className="flex flex-col items-center space-y-4">
+            <div className="flex flex-col items-center space-y-4 tour-profile-avatar">
               <div className="relative group">
                 <div className="w-32 h-32 rounded-full border-4 border-border-color bg-primary/5 overflow-hidden flex items-center justify-center shadow-xl">
                   {profile.avatar_url ? (
@@ -208,7 +208,7 @@ export default function Profile() {
               </p>
             </div>
 
-            <form onSubmit={handleSave} className="flex-1 space-y-6 w-full relative z-10">
+            <form onSubmit={handleSave} className="flex-1 space-y-6 w-full relative z-10 tour-profile-form">
               
               <div className="space-y-2">
                 <label className="text-sm font-bold text-muted-olive flex items-center gap-2">
@@ -256,7 +256,7 @@ export default function Profile() {
                 <button 
                   type="submit" 
                   disabled={saving}
-                  className="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-xl font-medium transition-colors flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-70"
+                  className="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-xl font-medium transition-colors flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-70 tour-profile-save"
                 >
                   {saving ? <CircleNotch className="w-5 h-5 animate-spin" /> : <FloppyDisk className="w-5 h-5" />}
                   {saving ? 'Salvando...' : 'Salvar Alterações'}

@@ -97,6 +97,10 @@ export default function IncomeModal({ rental, initialData, onClose, onSuccess })
 
       if (incError) throw incError
 
+      // Atualiza o status de pagamento do contrato para Pago
+      const { error: rentError } = await supabase.from('rentals').update({ payment_status: 'Pago' }).eq('id', rental.id)
+      if (rentError) console.error("Aviso: Falha ao atualizar status de pagamento do contrato.", rentError)
+
       localStorage.removeItem(`incomeDraft_${rental.id}`)
       onSuccess()
       onClose()

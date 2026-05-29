@@ -17,7 +17,9 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
     criminal_file: null,
     cnh_ear_file: null,
     residence_file: null,
-    sne_file: null
+    sne_file: null,
+    start_inspection_file: null,
+    end_inspection_file: null
   })
 
   const calculateInitialFirstPayment = () => {
@@ -87,7 +89,8 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
     total_price: formatInitialCurrency(rental.total_price),
     security_deposit: formatInitialCurrency(rental.security_deposit),
     start_inspection_notes: rental.start_inspection_notes || '',
-    end_inspection_notes: rental.end_inspection_notes || ''
+    end_inspection_notes: rental.end_inspection_notes || '',
+    payment_status: rental.payment_status || 'Pendente'
   })
 
   const handleCEP = async (e) => {
@@ -162,8 +165,19 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
       const diffHours = diffMs / (1000 * 60 * 60)
       const diffDays = Math.max(1, Math.ceil(diffHours / 24))
       
-      const multiplier = Math.ceil(diffDays / 7)
-      const text = `Duração: ${multiplier} semana${multiplier > 1 ? 's' : ''}`
+      let multiplier = 1
+      let text = ''
+
+      if (formData.rental_model === 'Por Dia') {
+          multiplier = diffDays
+          text = `Duração: ${multiplier} dia${multiplier > 1 ? 's' : ''}`
+      } else if (formData.rental_model === 'Por Mês') {
+          multiplier = Math.ceil(diffDays / 30)
+          text = `Duração: ${multiplier} mês(es)`
+      } else {
+          multiplier = Math.ceil(diffDays / 7)
+          text = `Duração: ${multiplier} semana${multiplier > 1 ? 's' : ''}`
+      }
       setDurationText(text)
 
       const unitValue = parseMaskedValue(formData.unit_price)
@@ -255,7 +269,9 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
         criminal: rental.criminal_record_file_url,
         cnh_ear: rental.cnh_ear_file_url,
         residence: rental.residence_proof_file_url,
-        sne: rental.sne_file_url
+        sne: rental.sne_file_url,
+        start_inspection: rental.start_inspection_photo_url,
+        end_inspection: rental.end_inspection_photo_url
       }
 
       if (files.uber_file) urls.uber = await uploadFile(files.uber_file, 'uber')
@@ -263,6 +279,8 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
       if (files.cnh_ear_file) urls.cnh_ear = await uploadFile(files.cnh_ear_file, 'cnh_ear')
       if (files.residence_file) urls.residence = await uploadFile(files.residence_file, 'residence')
       if (files.sne_file) urls.sne = await uploadFile(files.sne_file, 'sne')
+      if (files.start_inspection_file) urls.start_inspection = await uploadFile(files.start_inspection_file, 'inspections')
+      if (files.end_inspection_file) urls.end_inspection = await uploadFile(files.end_inspection_file, 'inspections')
 
       const startUtc = new Date(formData.start_date).toISOString()
       const endUtc = new Date(formData.expected_end_date).toISOString()
@@ -301,6 +319,7 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
           initial_km: parseInt(formData.initial_km),
           total_price: parseMaskedValue(formData.total_price),
           security_deposit: formData.security_deposit ? parseMaskedValue(formData.security_deposit) : null,
+          payment_status: formData.payment_status,
           
           uber_file_url: urls.uber,
           criminal_record_file_url: urls.criminal,
@@ -314,6 +333,8 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
           spouse_cpf: formData.spouse_cpf || null,
           start_inspection_notes: formData.start_inspection_notes || null,
           end_inspection_notes: formData.end_inspection_notes || null,
+          start_inspection_photo_url: urls.start_inspection || null,
+          end_inspection_photo_url: urls.end_inspection || null,
 
           first_payment_date: firstPaymentDateVal
         })
@@ -511,8 +532,19 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
                   )}
                 </div>
                 <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Status do Pagamento</label>
+                  <select name="payment_status" value={formData.payment_status} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold appearance-none dark:[color-scheme:dark]">
+                    <option value="Pendente">Pendente</option>
+                    <option value="Pago">Pago</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5 mt-2">
                   <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Modelo de Aluguel</label>
-                  <div className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main font-bold">Por Semana</div>
+                  <select name="rental_model" value={formData.rental_model || 'Por Semana'} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold appearance-none cursor-pointer">
+                    <option value="Por Dia">Por Dia</option>
+                    <option value="Por Semana">Por Semana</option>
+                    <option value="Por Mês">Por Mês</option>
+                  </select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Valor Unitário (Opcional)</label>
@@ -534,21 +566,59 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
               </div>
             </div>
 
-            {/* 6. Vistorias (Notas) */}
+            {/* 6. Vistorias (Notas e Fotos) */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-accent border-b border-border-color pb-2">
                 <Camera className="w-5 h-5" />
-                <h3 className="font-black uppercase text-xs tracking-widest">Observações de Vistoria</h3>
+                <h3 className="font-black uppercase text-xs tracking-widest">Vistoria</h3>
               </div>
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Vistoria Inicial (Notas)</label>
-                  <textarea name="start_inspection_notes" value={formData.start_inspection_notes} onChange={handleChange} rows="2" className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2 text-xs text-main focus:ring-2 focus:ring-accent outline-none resize-none" />
-                </div>
-                {rental.status === 'completed' && (
+              <div className="grid grid-cols-1 gap-6">
+                
+                <div className="space-y-3 bg-accent/5 p-4 rounded-xl border border-accent/10">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Vistoria Final (Notas)</label>
-                    <textarea name="end_inspection_notes" value={formData.end_inspection_notes} onChange={handleChange} rows="2" className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2 text-xs text-main focus:ring-2 focus:ring-accent outline-none resize-none" />
+                    <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Vistoria Inicial (Notas)</label>
+                    <textarea name="start_inspection_notes" value={formData.start_inspection_notes} onChange={handleChange} rows="2" className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2 text-xs text-main focus:ring-2 focus:ring-accent outline-none resize-none" />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <input type="file" name="start_inspection_file" onChange={handleFileChange} accept="image/*" className="hidden" id="start_inspection_file" />
+                    <label htmlFor="start_inspection_file" className={`flex items-center justify-between p-3 border rounded-xl cursor-pointer transition-all ${files.start_inspection_file ? 'border-accent bg-accent/10' : 'border-border-color hover:border-accent/50 bg-bg-main'}`}>
+                      <div className="flex items-center gap-3">
+                        <Camera className={`w-4 h-4 ${files.start_inspection_file || rental.start_inspection_photo_url ? 'text-accent' : 'text-muted-olive'}`} />
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black uppercase text-muted-olive tracking-widest">Foto da Vistoria Inicial</span>
+                          <span className="text-xs font-bold truncate max-w-[200px]">
+                            {files.start_inspection_file ? files.start_inspection_file.name : rental.start_inspection_photo_url ? 'Foto já enviada' : 'Clique para anexar foto'}
+                          </span>
+                        </div>
+                      </div>
+                      {(files.start_inspection_file || rental.start_inspection_photo_url) && <CheckCircle weight="fill" className="text-accent w-5 h-5" />}
+                    </label>
+                  </div>
+                </div>
+
+                {rental.status === 'completed' && (
+                  <div className="space-y-3 bg-primary/5 p-4 rounded-xl border border-primary/10">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Vistoria Final (Notas)</label>
+                      <textarea name="end_inspection_notes" value={formData.end_inspection_notes} onChange={handleChange} rows="2" className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2 text-xs text-main focus:ring-2 focus:ring-accent outline-none resize-none" />
+                    </div>
+
+                    <div className="space-y-1">
+                      <input type="file" name="end_inspection_file" onChange={handleFileChange} accept="image/*" className="hidden" id="end_inspection_file" />
+                      <label htmlFor="end_inspection_file" className={`flex items-center justify-between p-3 border rounded-xl cursor-pointer transition-all ${files.end_inspection_file ? 'border-primary bg-primary/10' : 'border-border-color hover:border-primary/50 bg-bg-main'}`}>
+                        <div className="flex items-center gap-3">
+                          <Camera className={`w-4 h-4 ${files.end_inspection_file || rental.end_inspection_photo_url ? 'text-primary' : 'text-muted-olive'}`} />
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase text-muted-olive tracking-widest">Foto da Vistoria Final</span>
+                            <span className="text-xs font-bold truncate max-w-[200px]">
+                              {files.end_inspection_file ? files.end_inspection_file.name : rental.end_inspection_photo_url ? 'Foto já enviada' : 'Clique para anexar foto'}
+                            </span>
+                          </div>
+                        </div>
+                        {(files.end_inspection_file || rental.end_inspection_photo_url) && <CheckCircle weight="fill" className="text-primary w-5 h-5" />}
+                      </label>
+                    </div>
                   </div>
                 )}
               </div>

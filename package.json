@@ -16,6 +16,7 @@
     "lucide-react": "^1.11.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "react-joyride": "^3.1.0",
     "react-router-dom": "^7.14.2",
     "recharts": "^3.8.1",
     "xlsx-js-style": "^1.2.0"
@@ -33,6 +34,7 @@
     "globals": "^17.5.0",
     "postcss": "^8.5.10",
     "tailwindcss": "^4.2.4",
-    "vite": "^8.0.10"
+    "vite": "^8.0.10",
+    "vite-plugin-node-polyfills": "^0.28.0"
   }
 }

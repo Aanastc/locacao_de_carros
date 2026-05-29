@@ -437,8 +437,14 @@ export default function CarDetails() {
             if (r.start_inspection_urls) {
                 r.start_inspection_urls.forEach(url => images.push({ url, label: `Vistoria Início - ${new Date(r.start_date).toLocaleDateString('pt-BR')}` }));
             }
+            if (r.start_inspection_photo_url) {
+                images.push({ url: r.start_inspection_photo_url, label: `Vistoria Início - ${new Date(r.start_date).toLocaleDateString('pt-BR')}` });
+            }
             if (r.end_inspection_urls) {
                 r.end_inspection_urls.forEach(url => images.push({ url, label: `Vistoria Fim - ${new Date(r.expected_end_date).toLocaleDateString('pt-BR')}` }));
+            }
+            if (r.end_inspection_photo_url) {
+                images.push({ url: r.end_inspection_photo_url, label: `Vistoria Fim - ${new Date(r.expected_end_date).toLocaleDateString('pt-BR')}` });
             }
         });
 
@@ -606,7 +612,7 @@ export default function CarDetails() {
 		const ws = XLSX.utils.aoa_to_sheet(matrix);
 		
 		// Aplica cores e bordas!
-		// applyStylesToSheet(ws);
+		applyStylesToSheet(ws);
 
 		const wb = XLSX.utils.book_new();
 		XLSX.utils.book_append_sheet(wb, ws, car.license_plate ? car.license_plate.toUpperCase() : "Plano Anual");
@@ -696,7 +702,7 @@ export default function CarDetails() {
 					</h1>
 				</div>
 
-				<div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+				<div className="flex flex-wrap items-center gap-3 w-full md:w-auto tour-car-actions">
 					{activeRental ? (
 						<button
 							onClick={() => setIsFinishModalOpen(true)}
@@ -764,7 +770,7 @@ export default function CarDetails() {
 			)}
 
 			{/* Indicadores de Desempenho (KPIs) */}
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 tour-car-kpis">
 				<div className="glass rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
 					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-2">
 						Total Faturado
@@ -1259,14 +1265,56 @@ export default function CarDetails() {
 										<p className="font-bold text-main text-lg">{currentInsurance.company_name}</p>
 									</div>
 									<div>
-										<p className="text-[10px] uppercase font-black tracking-widest text-muted-olive mb-1">Validade</p>
+										<p className="text-[10px] uppercase font-black tracking-widest text-muted-olive mb-1">Período de Cobertura</p>
 										<p className={`font-bold text-sm ${isExpired ? 'text-danger' : 'text-main'}`}>
-											{new Date(currentInsurance.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}
+											{new Date(currentInsurance.start_date + 'T12:00:00').toLocaleDateString('pt-BR')} a {new Date(currentInsurance.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}
 											{isExpired && ' (Vencido)'}
 										</p>
-										<p className="text-xs text-muted-olive">Total: R$ {parseFloat(currentInsurance.total_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+										<p className="text-xs text-muted-olive mt-0.5">Total: R$ {parseFloat(currentInsurance.total_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
 									</div>
+                                    
+                                    {currentInsurance.payment_type === 'Parcelado' && (
+                                        <div className="sm:col-span-2 pt-2 border-t border-accent/10 mt-2">
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <div>
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-olive">Parcelamento</p>
+                                                    <p className="text-[10px] font-bold text-main mt-0.5">
+                                                        {currentInsurance.installments_count || scheduledExpenses.filter(e => e.insurance_id === currentInsurance.id).length}x de R$ {(parseFloat(currentInsurance.total_amount) / (currentInsurance.installments_count || scheduledExpenses.filter(e => e.insurance_id === currentInsurance.id).length || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </p>
+                                                </div>
+                                                <p className="text-[10px] font-bold text-accent">
+                                                    {scheduledExpenses.filter(e => e.insurance_id === currentInsurance.id && e.status === 'Pago').length} / {currentInsurance.installments_count || scheduledExpenses.filter(e => e.insurance_id === currentInsurance.id).length} pagas
+                                                </p>
+                                            </div>
+                                            <div className="w-full bg-border-color/30 rounded-full h-1.5 overflow-hidden">
+                                                <div 
+                                                    className="bg-accent h-full rounded-full transition-all duration-500"
+                                                    style={{ 
+                                                        width: `${Math.min(100, ((scheduledExpenses.filter(e => e.insurance_id === currentInsurance.id && e.status === 'Pago').length) / (currentInsurance.installments_count || scheduledExpenses.filter(e => e.insurance_id === currentInsurance.id).length || 1)) * 100)}%` 
+                                                    }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    )}
 								</div>
+
+                                {/* Lista de Sinistros Atrelados (do Contrato Atual) */}
+                                {rentalIncidents.length > 0 && (
+                                    <div className="mt-4 space-y-2">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-danger px-1">Sinistros Acionados (Contrato Atual)</p>
+                                        {rentalIncidents.map(inc => (
+                                            <div key={inc.id} className="flex items-start justify-between bg-danger/5 border border-danger/10 p-3 rounded-xl">
+                                                <div>
+                                                    <p className="text-xs font-bold text-main">{inc.description}</p>
+                                                    <p className="text-[10px] text-muted-olive font-bold mt-0.5">{new Date(inc.incident_date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+                                                </div>
+                                                <span className="text-xs font-black text-danger bg-danger/10 px-2 py-1 rounded-lg">
+                                                    R$ {parseFloat(inc.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
 							</div>
 						)
 					})()}
@@ -1275,7 +1323,7 @@ export default function CarDetails() {
 			</div>
 
 					{/* Abas de Fluxo Financeiro Detalhado */}
-					<div className="glass rounded-3xl p-6 border border-border-color shadow-sm">
+					<div className="glass rounded-3xl p-6 border border-border-color shadow-sm tour-car-finance">
 						<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                             <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl w-full sm:w-auto overflow-x-auto no-scrollbar">
                                 <button
@@ -1380,8 +1428,8 @@ export default function CarDetails() {
 															)}
 														</td>
 														<td className="py-4 px-6 text-muted-olive text-xs">
-															{sched.type === 'Despesa' ? (
-                                                                <span className="break-words whitespace-normal max-w-[200px] inline-block leading-snug">{sched.description}</span>
+															{sched.period === '-' ? (
+                                                                <span className="break-words whitespace-normal max-w-[200px] inline-block leading-snug">{sched.description || sched.type}</span>
                                                             ) : (
                                                                 `${sched.period}/${sched.totalPeriods}`
                                                             )}
