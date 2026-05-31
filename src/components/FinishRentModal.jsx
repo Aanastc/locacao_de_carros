@@ -9,6 +9,13 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
   const [error, setError] = useState('')
   const [isInitialized, setIsInitialized] = useState(false)
   const [endInspectionFiles, setEndInspectionFiles] = useState([])
+  
+  const [financials, setFinancials] = useState({
+    loaded: false,
+    incomes: 0,
+    incidents: 0,
+    incidentsList: []
+  })
 
   const [formData, setFormData] = useState({
     actual_end_date: new Date().toISOString().split('T')[0],
@@ -16,6 +23,30 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
     payment_status: rental.payment_status,
     end_inspection_notes: ''
   })
+
+  useEffect(() => {
+    async function loadFinancials() {
+      try {
+        const [incRes, incdRes] = await Promise.all([
+          supabase.from('incomes').select('amount').eq('rental_id', rental.id),
+          supabase.from('rental_incidents').select('amount, description, incident_date').eq('rental_id', rental.id)
+        ])
+        
+        const incomesTotal = (incRes.data || []).reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
+        const incidentsTotal = (incdRes.data || []).reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
+        
+        setFinancials({
+          loaded: true,
+          incomes: incomesTotal,
+          incidents: incidentsTotal,
+          incidentsList: incdRes.data || []
+        })
+      } catch (err) {
+        console.error("Erro ao carregar finanças do aluguel:", err)
+      }
+    }
+    if (rental?.id) loadFinancials()
+  }, [rental.id])
 
   useEffect(() => {
     const saved = localStorage.getItem(`finishRentDraft_${rental.id}`)
@@ -131,19 +162,68 @@ export default function FinishRentModal({ rental, car, onClose, onSuccess }) {
           {error && <div className="bg-danger/10 text-danger p-3 rounded-lg mb-4 text-sm font-medium border border-danger/20">{error}</div>}
 
           <div className="bg-bg-main border border-border-color rounded-2xl p-4 mb-6">
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-1">Cliente</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-1">Resumo do Contrato</p>
             <p className="text-main font-bold">{rental.client_name}</p>
-            <div className="flex justify-between mt-3 pt-3 border-t border-border-color">
+            
+            <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-border-color">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-olive">Km Inicial</p>
                 <p className="text-sm font-bold text-main">{rental.initial_km} km</p>
               </div>
               <div className="text-right">
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-olive">Valor Acordado</p>
-                <p className="text-sm font-bold text-primary">R$ {rental.total_price}</p>
+                <p className="text-sm font-bold text-primary">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(rental.total_price)}</p>
               </div>
             </div>
           </div>
+
+          {financials.loaded && (
+            <div className="bg-slate-50 dark:bg-slate-900 border border-border-color rounded-2xl p-5 mb-6 shadow-inner">
+              <h3 className="text-xs font-black uppercase tracking-widest text-main mb-4 flex items-center gap-2">
+                Balanço Financeiro Final
+              </h3>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-olive font-medium">Garantia Retida (Caução):</span>
+                  <span className="font-bold text-main">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(rental.security_deposit || 0)}</span>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-olive font-medium">Total de Parcelas Recebidas:</span>
+                  <span className="text-success font-bold">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(financials.incomes)}</span>
+                </div>
+
+                {rental.total_price - financials.incomes > 0 && (
+                  <div className="flex justify-between text-sm bg-danger/5 p-2 rounded-lg -mx-2 px-2">
+                    <span className="text-danger font-bold flex items-center gap-1">Falta Pagar do Aluguel:</span>
+                    <span className="text-danger font-bold">- R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(rental.total_price - financials.incomes)}</span>
+                  </div>
+                )}
+
+                {financials.incidents > 0 && (
+                  <div className="flex justify-between text-sm bg-orange-500/10 p-2 rounded-lg -mx-2 px-2 mt-1">
+                    <span className="text-orange-600 dark:text-orange-400 font-bold flex items-center gap-1">Sinistros / Prejuízos:</span>
+                    <span className="text-orange-600 dark:text-orange-400 font-bold">- R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(financials.incidents)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-base pt-4 border-t border-border-color mt-4">
+                  <span className="text-main font-black uppercase tracking-wider text-xs flex items-center">Resultado do Caução</span>
+                  {(() => {
+                    const balance = (rental.security_deposit || 0) - (rental.total_price - financials.incomes) - financials.incidents;
+                    if (balance > 0) {
+                      return <span className="text-success font-black text-lg">Devolver R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(balance)}</span>
+                    } else if (balance < 0) {
+                      return <span className="text-danger font-black text-lg">Cobrar R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(Math.abs(balance))}</span>
+                    } else {
+                      return <span className="text-muted-olive font-black text-lg">R$ 0,00</span>
+                    }
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
 
           <form id="finishForm" onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">

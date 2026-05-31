@@ -388,7 +388,7 @@ export default function AddCarForm({ onComplete }) {
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Km Atual *</label>
-                    <input required type="number" name="current_km" value={formData.current_km} onChange={handleChange} max="9999999" className="w-full bg-primary/5 border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" placeholder="50000" />
+                    <input required type="number" name="current_km" value={formData.current_km} onChange={handleChange} className="w-full bg-primary/5 border border-border-color text-main rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-accent outline-none" placeholder="50000" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-olive uppercase tracking-widest">Km Próxima Revisão</label>

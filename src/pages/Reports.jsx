@@ -76,16 +76,63 @@ export default function Reports() {
       const carsList = carsRes.data || []
       const carIds = carsList.map(c => c.id)
 
+      let fetchedExpenses = expRes.data || []
+      let fetchedIncomes = incRes.data || []
+      const rentalsList = rentRes.data || []
+
+      // Injetar saldo não pago dos contratos como Faturamento no mês de início
+      rentalsList.forEach(rent => {
+          const received = fetchedIncomes.filter(inc => inc.rental_id === rent.id).reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+          const pending = parseFloat(rent.total_price) - received;
+          if (pending > 0) {
+              fetchedIncomes.push({
+                  amount: pending,
+                  payment_date: rent.start_date,
+                  id: 'pend-rent-' + rent.id,
+                  rentals: { car_id: rent.car_id }
+              })
+          }
+      })
+
       let schedExpRes = { data: [] }
       if (carIds.length > 0) {
         const yearStart = new Date(selectedParcelYear, 0, 1).toISOString()
         const yearEnd = new Date(selectedParcelYear, 11, 31, 23, 59, 59).toISOString()
         schedExpRes = await supabase.from('scheduled_expenses').select('*').in('car_id', carIds).gte('due_date', yearStart).lte('due_date', yearEnd)
+
+        // Despesas Pendentes
+        const { data: kpiPending } = await supabase.from('scheduled_expenses').select('*, cars(brand, model)')
+           .in('car_id', carIds).gte('due_date', startDate).lte('due_date', endDate).eq('status', 'Pendente').neq('expense_type', 'Reembolso Sinistro')
+        
+        if (kpiPending) {
+           kpiPending.forEach(p => {
+               fetchedExpenses.push({
+                   ...p,
+                   expense_date: p.due_date,
+                   id: 'sched-' + p.id
+               })
+           })
+        }
+
+        // Receitas Pendentes (Reembolso Sinistro)
+        const { data: kpiPendingInc } = await supabase.from('scheduled_expenses').select('*, cars(brand, model)')
+           .in('car_id', carIds).gte('due_date', startDate).lte('due_date', endDate).eq('status', 'Pendente').eq('expense_type', 'Reembolso Sinistro')
+        
+        if (kpiPendingInc) {
+           kpiPendingInc.forEach(p => {
+               fetchedIncomes.push({
+                   ...p,
+                   payment_date: p.due_date,
+                   id: 'sched-inc-' + p.id,
+                   rentals: { car_id: p.car_id }
+               })
+           })
+        }
       }
 
-      setIncomes(incRes.data || [])
-      setExpenses(expRes.data || [])
-      setRentals(rentRes.data || [])
+      setIncomes(fetchedIncomes)
+      setExpenses(fetchedExpenses)
+      setRentals(rentalsList)
       setCars(carsList)
       setScheduledExpenses(schedExpRes.data || [])
     } catch (error) {

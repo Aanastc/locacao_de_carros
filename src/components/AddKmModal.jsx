@@ -19,7 +19,7 @@ export default function AddKmModal({ car, kmLog, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     km: kmLog ? kmLog.km : (car.current_km || ''),
     date: getInitialDate(),
-    notes: kmLog ? kmLog.label || '' : ''
+    notes: kmLog ? (kmLog.originalNotes || '') : ''
   })
 
   const handleChange = (e) => {
@@ -42,7 +42,7 @@ export default function AddKmModal({ car, kmLog, onClose, onSuccess }) {
             km: kmNum,
             date: dateUtc,
             notes: formData.notes || null
-          }).eq('id', kmLog.id)
+          }).eq('id', kmLog.realId || kmLog.id)
           if (logError) throw logError
       } else {
           const { error: logError } = await supabase.from('km_logs').insert([{

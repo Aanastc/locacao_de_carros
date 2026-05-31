@@ -135,25 +135,6 @@ export default function Dashboard() {
       const activeRentals = []
       
       carsData?.forEach(car => {
-        // Maintenance Alert
-        if (car.next_revision_km) {
-          if (car.current_km >= (car.next_revision_km - 1000)) {
-            const overdue = car.current_km >= car.next_revision_km;
-            newAlerts.push({
-              type: 'maintenance',
-              title: overdue ? 'Revisão Atrasada' : 'Revisão Próxima',
-              desc: `${car.brand} ${car.model} está com ${car.current_km.toLocaleString()} km (Revisão: ${car.next_revision_km.toLocaleString()} km)`,
-              carPlate: car.license_plate
-            })
-          }
-        } else if (car.current_km && car.current_km % 10000 > 9000) {
-          newAlerts.push({
-            type: 'maintenance',
-            title: 'Revisão Próxima',
-            desc: `${car.brand} ${car.model} está com ${car.current_km.toLocaleString()} km. Atualize a 'Próxima Revisão' no cadastro.`,
-            carPlate: car.license_plate
-          })
-        }
 
         const active = car.rentals?.find(r => r.status === 'active')
         if (active) {
@@ -228,33 +209,47 @@ export default function Dashboard() {
         }
       })
       
-      setAlerts([...newAlerts, ...paymentAlerts])
-
-      // 7. Acontecimentos de Hoje
+      // 7. Acontecimentos de Hoje e Pendências Atrasadas
       const todayStr = format(new Date(), 'yyyy-MM-dd')
       const carIds = carsData?.map(c => c.id) || []
       
-      let schedExpToday = []
+      let schedExpPendent = []
       if (carIds.length > 0) {
         const { data: seData } = await supabase
           .from('scheduled_expenses')
           .select('*, cars(brand, model, license_plate)')
           .in('car_id', carIds)
-          .eq('due_date', todayStr)
+          .lte('due_date', todayStr)
           .eq('status', 'Pendente')
-        if (seData) schedExpToday = seData
+        if (seData) schedExpPendent = seData
       }
 
       const events = []
-      schedExpToday.forEach(exp => {
-        events.push({
-          type: 'expense',
-          title: 'Conta a Pagar',
-          desc: `${exp.expense_type} - ${exp.cars?.brand} ${exp.cars?.model} (${exp.cars?.license_plate})`,
-          amount: exp.amount,
-          carPlate: exp.cars?.license_plate
-        })
+
+      schedExpPendent.forEach(exp => {
+        const [y, m, d] = exp.due_date.split('-');
+        const expDateFormatted = format(new Date(y, m - 1, d), 'dd/MM/yyyy')
+
+        if (exp.due_date === todayStr) {
+          events.push({
+            type: 'expense',
+            title: exp.expense_type === 'Reembolso Sinistro' ? 'Receita a Receber Hoje' : 'Conta a Pagar Hoje',
+            desc: `${exp.expense_type} - ${exp.cars?.brand} ${exp.cars?.model} (${exp.cars?.license_plate})`,
+            amount: exp.amount,
+            carPlate: exp.cars?.license_plate
+          })
+        } else {
+          paymentAlerts.push({
+            type: 'payment_pending',
+            title: exp.expense_type === 'Reembolso Sinistro' ? 'Receita Atrasada' : 'Conta Atrasada',
+            desc: `${exp.expense_type} (${expDateFormatted}) - ${exp.cars?.brand} ${exp.cars?.model}`,
+            carPlate: exp.cars?.license_plate,
+            amount: exp.amount
+          })
+        }
       })
+
+      setAlerts([...newAlerts, ...paymentAlerts])
 
       activeRentals.forEach(rent => {
         if (rent.expected_end_date === todayStr) {

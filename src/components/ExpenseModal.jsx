@@ -235,7 +235,7 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-bg-card border border-border-color rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
+      <div className="bg-bg-card border border-border-color rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
         
         <div className="flex justify-between items-center p-6 border-b border-border-color bg-slate-50/50 dark:bg-slate-950/20">
           <h2 className="text-xl font-black text-main">{expense ? 'Editar Despesa' : 'Lançar Despesa'}</h2>
@@ -244,7 +244,7 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto overflow-x-hidden scrollbar-thin">
           {error && <div className="bg-danger/10 text-danger border border-danger/20 p-3 rounded-xl mb-4 text-sm font-medium">{error}</div>}
 
           <form id="expenseForm" onSubmit={handleSubmit} className="space-y-4">

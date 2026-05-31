@@ -241,6 +241,43 @@ export default function CarDetails() {
 		}
 	};
 
+	const handleReceiveScheduledExpense = async (schedId) => {
+		try {
+			const expense = scheduledExpenses.find(e => e.id === schedId);
+			if (!expense) return;
+
+			if (!activeRental) {
+				alert("É necessário ter um contrato ativo para vincular este recebimento agendado.");
+				return;
+			}
+
+			setLoading(true);
+			const { data: incData, error: incError } = await supabase.from('incomes').insert([{
+				rental_id: activeRental.id,
+				user_id: user.id,
+				amount: expense.amount,
+				payment_date: expense.due_date,
+				payment_method: 'Pix',
+				notes: expense.description || 'Recebimento de agendamento'
+			}]).select().single();
+
+			if (incError) throw incError;
+
+			const { error: updError } = await supabase.from('scheduled_expenses').update({
+				status: 'Pago'
+			}).eq('id', schedId);
+
+			if (updError) throw updError;
+
+			fetchData();
+		} catch (error) {
+			console.error('Erro ao receber agendamento', error);
+			alert('Erro ao processar recebimento.');
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	const handleRevertPayment = async (sched) => {
 		if (!window.confirm("Deseja realmente reverter este pagamento? O registro correspondente (gasto ou entrada) será excluído.")) return;
 
@@ -261,7 +298,12 @@ export default function CarDetails() {
 					if (delError) throw delError;
 				}
 			} else {
-				if (sched.incomeId) {
+				if (sched.period === '-') {
+					const { error: updError } = await supabase.from('scheduled_expenses').update({
+						status: 'Pendente'
+					}).eq('id', sched.id);
+					if (updError) throw updError;
+				} else if (sched.incomeId) {
 					const { error: delError } = await supabase.from('incomes').delete().eq('id', sched.incomeId);
 					if (delError) throw delError;
 				}
@@ -656,10 +698,12 @@ export default function CarDetails() {
 		kmLogs.forEach((log) => {
 			history.push({
 				id: `log-${log.id}`,
+				realId: log.id,
 				date: log.date,
 				km: log.km,
 				label: log.notes ? `Avulso: ${log.notes}` : `Lançamento Avulso`,
 				type: "avulso",
+				originalNotes: log.notes || ""
 			});
 		});
 
@@ -672,6 +716,35 @@ export default function CarDetails() {
 		const maxHistoryKm = Math.max(...kmHistory.map(h => h.km || 0));
 		return Math.max(baseKm, maxHistoryKm);
 	}, [car?.current_km, kmHistory]);
+
+	const totalExpenses = useMemo(() => {
+		const paid = expenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+		const pending = scheduledExpenses
+			.filter((e) => e.status === "Pendente" && e.expense_type !== "Reembolso Sinistro")
+			.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+		return paid + pending;
+	}, [expenses, scheduledExpenses]);
+
+	const totalIncomes = useMemo(() => {
+		let total = incomes.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+		
+		const pendingReceitas = scheduledExpenses
+			.filter((e) => e.status === "Pendente" && e.expense_type === "Reembolso Sinistro")
+			.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+		
+		total += pendingReceitas;
+
+		const allRentals = [...rentalsHistory];
+		if (activeRental) allRentals.push(activeRental);
+
+		allRentals.forEach(rental => {
+			const received = incomes.filter(inc => inc.rental_id === rental.id).reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+			const pending = parseFloat(rental.total_price) - received;
+			if (pending > 0) total += pending;
+		});
+
+		return total;
+	}, [incomes, scheduledExpenses, activeRental, rentalsHistory]);
 
 	if (loading) {
 		return (
@@ -777,9 +850,7 @@ export default function CarDetails() {
 					</p>
 					<p className="text-3xl font-black text-success">
 						<span className="text-sm font-bold mr-1">R$</span>
-						{incomes
-							.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
-							.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+						{totalIncomes.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
 					</p>
 					<div className="flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-lg bg-success/10 text-[10px] text-success font-bold w-max">
 						<TrendUp className="w-3.5 h-3.5" /> Receita Bruta Acumulada
@@ -792,9 +863,7 @@ export default function CarDetails() {
 					</p>
 					<p className="text-3xl font-black text-danger">
 						<span className="text-sm font-bold mr-1">R$</span>
-						{expenses
-							.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
-							.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+						{totalExpenses.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
 					</p>
 					<div className="flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-lg bg-danger/10 text-[10px] text-danger font-bold w-max">
 						<ArrowDownRight className="w-3.5 h-3.5" /> Saídas e Manutenções
@@ -806,12 +875,9 @@ export default function CarDetails() {
 						Saldo Líquido
 					</p>
 					<p
-						className={`text-3xl font-black ${incomes.reduce((acc, curr) => acc + parseFloat(curr.amount), 0) - expenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0) >= 0 ? "text-primary" : "text-danger"}`}>
+						className={`text-3xl font-black ${totalIncomes - totalExpenses >= 0 ? "text-primary" : "text-danger"}`}>
 						<span className="text-sm font-bold mr-1">R$</span>
-						{(
-							incomes.reduce((acc, curr) => acc + parseFloat(curr.amount), 0) -
-							expenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
-						).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+						{(totalIncomes - totalExpenses).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
 					</p>
 					<div className="flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-lg bg-primary/10 text-[10px] text-primary font-bold w-max">
 						<CurrencyDollar className="w-3.5 h-3.5" /> Resultado do Ativo
@@ -1001,7 +1067,7 @@ export default function CarDetails() {
 												title={record.label}>
 												{record.label}
 											</span>
-                                            {record.type === "log" && (
+                                            {record.type === "avulso" && (
                                                 <button 
                                                     onClick={() => setEditingKm(record)}
                                                     className="p-1.5 rounded-lg bg-bg-main border border-border-color text-muted-olive hover:text-main transition-colors shrink-0">
@@ -1478,19 +1544,27 @@ export default function CarDetails() {
 														</td>
 														<td className="py-4 px-6">
 															{!sched.isPaid ? (
-                                                                sched.type === 'Despesa' ? (
-                                                                    <div className="flex items-center gap-2">
+                                                                sched.period === '-' ? (
+                                                                    sched.type === 'Despesa' ? (
+                                                                        <div className="flex items-center gap-2">
+                                                                            <button
+                                                                                onClick={() => handlePayScheduledExpense(sched.id)}
+                                                                                className="bg-danger hover:bg-danger/90 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-sm shadow-danger/20 transition-all flex items-center gap-1">
+                                                                                <CheckCircle className="w-3 h-3" /> Pagar
+                                                                            </button>
+                                                                            <button 
+                                                                                onClick={() => setEditingScheduledExpense(sched)}
+                                                                                className="p-1.5 rounded-lg bg-bg-main border border-border-color text-muted-olive hover:text-main transition-colors">
+                                                                                <PencilSimple className="w-3 h-3" />
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : (
                                                                         <button
-                                                                            onClick={() => handlePayScheduledExpense(sched.id)}
-                                                                            className="bg-danger hover:bg-danger/90 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-sm shadow-danger/20 transition-all flex items-center gap-1">
-                                                                            <CheckCircle className="w-3 h-3" /> Pagar
+                                                                            onClick={() => handleReceiveScheduledExpense(sched.id)}
+                                                                            className="bg-accent hover:bg-accent/90 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-sm shadow-accent/20 transition-all flex items-center gap-1">
+                                                                            <CheckCircle className="w-3 h-3" /> Receber
                                                                         </button>
-                                                                        <button 
-                                                                            onClick={() => setEditingScheduledExpense(sched)}
-                                                                            className="p-1.5 rounded-lg bg-bg-main border border-border-color text-muted-olive hover:text-main transition-colors">
-                                                                            <PencilSimple className="w-3 h-3" />
-                                                                        </button>
-                                                                    </div>
+                                                                    )
                                                                 ) : (
                                                                     <button
                                                                         onClick={() => {
