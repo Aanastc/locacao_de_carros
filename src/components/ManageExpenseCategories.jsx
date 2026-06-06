@@ -14,21 +14,33 @@ export default function ManageExpenseCategories({ user, onClose, onCategoriesUpd
 
   const fetchStats = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    const { data: expData, error: expError } = await supabase
       .from('expenses')
       .select('expense_type')
       .eq('user_id', user.id)
 
-    if (error) {
+    const { data: schedData, error: schedError } = await supabase
+      .from('scheduled_expenses')
+      .select('expense_type, cars!inner(owner_id)')
+      .eq('cars.owner_id', user.id)
+
+    if (expError || schedError) {
       setError('Erro ao carregar categorias.')
       setLoading(false)
       return
     }
 
     const counts = {}
-    data.forEach(item => {
-      counts[item.expense_type] = (counts[item.expense_type] || 0) + 1
-    })
+    if (expData) {
+      expData.forEach(item => {
+        counts[item.expense_type] = (counts[item.expense_type] || 0) + 1
+      })
+    }
+    if (schedData) {
+      schedData.forEach(item => {
+        counts[item.expense_type] = (counts[item.expense_type] || 0) + 1
+      })
+    }
 
     // Include defaults even if count is 0, unless hidden
     const hidden = JSON.parse(localStorage.getItem(`hiddenExpenseCategories_${user.id}`) || '[]')

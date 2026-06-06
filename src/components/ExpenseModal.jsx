@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import ManageExpenseCategories from './ManageExpenseCategories'
 import { PencilSimple } from '@phosphor-icons/react'
 
-export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
+export default function ExpenseModal({ car, expense, onClose, onSuccess, realCurrentKm }) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -32,13 +32,20 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
     const hidden = JSON.parse(localStorage.getItem(`hiddenExpenseCategories_${user.id}`) || '[]')
     const defaultCats = ['Troca de óleo', 'Manutenção', 'Seguro', 'Alinhamento', 'Multas'].filter(c => !hidden.includes(c))
     
-    const { data, error } = await supabase
+    const { data: expData, error: expError } = await supabase
       .from('expenses')
       .select('expense_type')
       .eq('user_id', user.id)
+      
+    const { data: schedData, error: schedError } = await supabase
+      .from('scheduled_expenses')
+      .select('expense_type, cars!inner(owner_id)')
+      .eq('cars.owner_id', user.id)
     
-    if (!error && data) {
-      const unique = [...new Set(data.map(item => item.expense_type))]
+    if (!expError && !schedError) {
+      const expTypes = expData ? expData.map(item => item.expense_type) : []
+      const schedTypes = schedData ? schedData.map(item => item.expense_type) : []
+      const unique = [...new Set([...expTypes, ...schedTypes])]
       const combined = [...new Set([...defaultCats, ...unique])]
       setCategories(combined.sort())
     } else {
@@ -268,7 +275,7 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess }) {
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">KM Atual (Ref)</label>
                   <div className="w-full bg-slate-100 dark:bg-slate-800/50 border border-border-color rounded-xl px-4 py-2.5 text-muted-olive font-bold">
-                    {car.current_km?.toLocaleString() || '0'}
+                    {realCurrentKm?.toLocaleString() || car.current_km?.toLocaleString() || '0'}
                   </div>
                 </div>
                 <div className="space-y-2">

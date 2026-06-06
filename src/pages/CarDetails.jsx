@@ -746,6 +746,17 @@ export default function CarDetails() {
 		return total;
 	}, [incomes, scheduledExpenses, activeRental, rentalsHistory]);
 
+	const allRentalsSorted = useMemo(() => {
+		const arr = [...rentalsHistory];
+		if (activeRental) arr.push(activeRental);
+		return arr.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+	}, [rentalsHistory, activeRental]);
+
+	const getContractNumber = (id) => {
+		const index = allRentalsSorted.findIndex(r => r.id === id);
+		return index >= 0 ? index + 1 : null;
+	};
+
 	if (loading) {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
@@ -1091,13 +1102,20 @@ export default function CarDetails() {
 							<div className="flex justify-between items-center mb-6 relative z-10">
 								<h3 className="text-xl font-black flex items-center gap-2 text-main">
 									<CheckCircle className="w-6 h-6 text-primary" />
-									Contrato Atual
+									Contrato Atual <span className="text-xs font-black uppercase text-muted-olive tracking-widest ml-2 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">nº {String(getContractNumber(activeRental.id)).padStart(2, '0')}</span>
 								</h3>
-								<button
-									onClick={() => setIsEditRentModalOpen(true)}
-									className="px-3 py-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent font-bold text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 border border-accent/20">
-									<PencilSimple className="w-4 h-4" /> Editar Contrato
-								</button>
+								<div className="flex gap-2">
+									<button
+										onClick={() => setSelectedHistoryRent(activeRental)}
+										className="px-3 py-1.5 rounded-lg bg-bg-main hover:bg-slate-100 dark:hover:bg-slate-800 text-muted-olive hover:text-main font-bold text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 border border-border-color">
+										<FileText className="w-4 h-4" /> Detalhes
+									</button>
+									<button
+										onClick={() => setIsEditRentModalOpen(true)}
+										className="px-3 py-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent font-bold text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 border border-accent/20">
+										<PencilSimple className="w-4 h-4" /> Editar
+									</button>
+								</div>
 							</div>
 
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
@@ -1748,8 +1766,9 @@ export default function CarDetails() {
 												onClick={() => setSelectedHistoryRent(rent)}
 												className="border-b border-border-color last:border-0 hover:bg-primary/5 transition-colors cursor-pointer">
 												<td className="py-4">
-													<p className="font-bold text-main">
-														{rent.client_name}
+													<p className="font-bold text-main flex flex-col">
+														<span>{rent.client_name}</span>
+														<span className="text-[10px] text-muted-olive uppercase font-black tracking-widest mt-0.5">Contrato nº {String(getContractNumber(rent.id)).padStart(2, '0')}</span>
 													</p>
 												</td>
 												<td className="py-4 text-xs text-muted-olive">
@@ -1797,6 +1816,7 @@ export default function CarDetails() {
 				<ExpenseModal
 					car={car}
 					expense={editingExpense}
+					realCurrentKm={kmLogs.length > 0 ? kmLogs[0].km : car.current_km}
 					onClose={() => {
 						setIsExpenseModalOpen(false);
 						setEditingExpense(null);
@@ -1875,6 +1895,7 @@ export default function CarDetails() {
 			{selectedHistoryRent && (
 				<RentDetailsModal
 					rental={selectedHistoryRent}
+					contractNumber={getContractNumber(selectedHistoryRent.id)}
 					onClose={() => setSelectedHistoryRent(null)}
 				/>
 			)}

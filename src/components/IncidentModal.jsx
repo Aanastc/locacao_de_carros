@@ -2,17 +2,21 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { X, CircleNotch, WarningOctagon } from '@phosphor-icons/react'
 
-export default function IncidentModal({ car, activeRental, onClose, onSuccess }) {
+export default function IncidentModal({ car, activeRental, incident, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const [formData, setFormData] = useState({
-    incident_date: new Date().toISOString().split('T')[0],
-    description: '',
-    amount: '',
-    is_linked_to_rental: !!activeRental,
-    payment_source: 'Caução',
-    payment_date: new Date().toISOString().split('T')[0]
+    incident_date: incident?.incident_date || new Date().toISOString().split('T')[0],
+    description: incident ? incident.description.split(' | Forma Pagto: ')[0] : '',
+    amount: incident ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(incident.amount) : '',
+    is_linked_to_rental: incident ? !!incident.rental_id : !!activeRental,
+    payment_source: incident && incident.description.includes(' | Forma Pagto: ') 
+      ? (incident.description.split(' | Forma Pagto: ')[1] === 'Despesa (Proprietário)' ? 'owner' 
+         : incident.description.split(' | Forma Pagto: ')[1] === 'Caução' ? 'Caução' 
+         : 'renter_extra') 
+      : 'Caução',
+    payment_date: incident?.incident_date || new Date().toISOString().split('T')[0]
   })
 
   const handleChange = (e) => {
@@ -45,13 +49,29 @@ export default function IncidentModal({ car, activeRental, onClose, onSuccess })
       const amount = parseMaskedValue(formData.amount)
       if (amount <= 0) throw new Error("Valor do sinistro deve ser maior que zero.")
 
+      const finalDescription = `${formData.description} | Forma Pagto: ${formData.payment_source === 'owner' ? 'Despesa (Proprietário)' : formData.payment_source === 'Caução' ? 'Caução' : 'Locatário à parte'}`;
+
+      if (incident) {
+        // Atualiza apenas o sinistro
+        const { error: updError } = await supabase.from('rental_incidents').update({
+          incident_date: formData.incident_date,
+          description: finalDescription,
+          amount: amount
+        }).eq('id', incident.id);
+        if (updError) throw updError;
+
+        onSuccess();
+        onClose();
+        return;
+      }
+
       if (formData.is_linked_to_rental) {
         if (!activeRental) throw new Error("Não há contrato de aluguel ativo para vincular.");
 
         const { error: insError } = await supabase.from('rental_incidents').insert([{
           rental_id: activeRental.id,
           incident_date: formData.incident_date,
-          description: formData.description,
+          description: finalDescription,
           amount: amount
         }])
 
@@ -143,7 +163,7 @@ export default function IncidentModal({ car, activeRental, onClose, onSuccess })
         
         <div className="flex justify-between items-center p-6 border-b border-border-color bg-slate-50/50 dark:bg-slate-950/20">
           <h2 className="text-xl font-black text-main flex items-center gap-2">
-            <WarningOctagon className="w-6 h-6 text-danger" /> Registrar Sinistro
+            <WarningOctagon className="w-6 h-6 text-danger" /> {incident ? 'Editar Sinistro' : 'Registrar Sinistro'}
           </h2>
           <button onClick={onClose} className="text-muted-olive hover:text-main transition-colors">
             <X className="w-5 h-5" />
@@ -153,7 +173,15 @@ export default function IncidentModal({ car, activeRental, onClose, onSuccess })
         <div className="p-6">
           {error && <div className="bg-danger/10 text-danger border border-danger/20 p-3 rounded-xl mb-4 text-sm font-medium">{error}</div>}
 
-          {formData.is_linked_to_rental && formData.payment_source === 'Caução' ? (
+          {incident && (
+             <div className="bg-warning/10 border border-warning/20 p-4 rounded-xl mb-6 transition-all">
+               <p className="text-xs font-medium text-main">
+                 <strong>Aviso:</strong> Editar este sinistro atualizará apenas os dados no contrato. Lançamentos financeiros (despesas ou receitas) gerados anteriormente não serão alterados automaticamente.
+               </p>
+             </div>
+          )}
+
+          {!incident && (formData.is_linked_to_rental && formData.payment_source === 'Caução' ? (
              <div className="bg-danger/5 border border-danger/20 p-4 rounded-xl mb-6 transition-all">
                <p className="text-xs font-medium text-main">
                  O valor será deduzido do caução {activeRental ? `de R$ ${activeRental.security_deposit || '0,00'}` : ''} do contrato ativo. O incidente também ficará registrado no histórico do locatário.
@@ -171,7 +199,7 @@ export default function IncidentModal({ car, activeRental, onClose, onSuccess })
                  O pagamento deste sinistro entrará no fluxo como uma <strong>Despesa</strong>. Se a data de pagamento for hoje ou passada, entrará em Gastos; se for futura, entrará no Cronograma.
                </p>
              </div>
-          )}
+          ))}
 
           <form id="incidentForm" onSubmit={handleSubmit} className="space-y-4">
             {activeRental && (
@@ -201,10 +229,12 @@ export default function IncidentModal({ car, activeRental, onClose, onSuccess })
                 <input required type="date" name="incident_date" value={formData.incident_date} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
                 </div>
 
-                <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Data de Pagamento *</label>
-                <input required type="date" name="payment_date" value={formData.payment_date} onChange={handleChange} disabled={formData.is_linked_to_rental && formData.payment_source === 'Caução'} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:[color-scheme:dark]" />
-                </div>
+                {!incident && (
+                  <div className="space-y-2">
+                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Data de Pagamento *</label>
+                  <input required type="date" name="payment_date" value={formData.payment_date} onChange={handleChange} disabled={formData.is_linked_to_rental && formData.payment_source === 'Caução'} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:[color-scheme:dark]" />
+                  </div>
+                )}
             </div>
 
             <div className="space-y-2">
@@ -224,7 +254,7 @@ export default function IncidentModal({ car, activeRental, onClose, onSuccess })
             Cancelar
           </button>
           <button type="submit" form="incidentForm" disabled={loading} className="flex-1 py-3 px-4 rounded-xl bg-danger text-white font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-danger/20">
-            {loading ? <CircleNotch className="w-5 h-5 animate-spin" /> : <span>Registrar</span>}
+            {loading ? <CircleNotch className="w-5 h-5 animate-spin" /> : <span>{incident ? 'Salvar Alterações' : 'Registrar'}</span>}
           </button>
         </div>
       </div>

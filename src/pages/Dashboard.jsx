@@ -112,11 +112,14 @@ export default function Dashboard() {
       // 2. Determine available periods
       let startDate, endDate
       if (filterPeriod === 'month') {
-        startDate = new Date(selectedYear, selectedMonth - 1, 1).toISOString()
-        endDate = new Date(selectedYear, selectedMonth, 0, 23, 59, 59).toISOString()
+        const y = selectedYear
+        const m = selectedMonth - 1
+        const lastDay = new Date(y, m + 1, 0).getDate()
+        startDate = `${y}-${String(selectedMonth).padStart(2, '0')}-01`
+        endDate   = `${y}-${String(selectedMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
       } else {
-        startDate = new Date(selectedYear, 0, 1).toISOString()
-        endDate = new Date(selectedYear, 11, 31, 23, 59, 59).toISOString()
+        startDate = `${selectedYear}-01-01`
+        endDate   = `${selectedYear}-12-31`
       }
 
       // 3. Fetch Financials

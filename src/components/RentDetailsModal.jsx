@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { X, User, Phone, IdentificationCard, Calendar, Car, CurrencyDollar, CheckCircle, FileText, Camera, WarningOctagon, Trash, CircleNotch } from '@phosphor-icons/react'
+import { X, User, Phone, IdentificationCard, Calendar, Car, CurrencyDollar, CheckCircle, FileText, Camera, WarningOctagon, Trash, CircleNotch, PencilSimple } from '@phosphor-icons/react'
+import IncidentModal from './IncidentModal'
 
-export default function RentDetailsModal({ rental, onClose }) {
+export default function RentDetailsModal({ rental, contractNumber, onClose }) {
   const [incidents, setIncidents] = useState([])
   const [loadingIncidents, setLoadingIncidents] = useState(true)
   const [deletingIncidentId, setDeletingIncidentId] = useState(null)
+  const [editingIncident, setEditingIncident] = useState(null)
 
   const fetchIncidents = async () => {
     if (!rental) return
     setLoadingIncidents(true)
     const { data, error } = await supabase
-      .from('incidents')
+      .from('rental_incidents')
       .select('*')
       .eq('rental_id', rental.id)
       .order('incident_date', { ascending: false })
@@ -33,7 +35,7 @@ export default function RentDetailsModal({ rental, onClose }) {
 
   const handleDeleteIncident = async (id) => {
     setDeletingIncidentId(id)
-    const { error } = await supabase.from('incidents').delete().eq('id', id)
+    const { error } = await supabase.from('rental_incidents').delete().eq('id', id)
     if (!error) {
       fetchIncidents()
     }
@@ -53,7 +55,7 @@ export default function RentDetailsModal({ rental, onClose }) {
         <div className="flex justify-between items-center p-6 border-b border-border-color bg-slate-50/50 dark:bg-slate-950/20">
           <h2 className="text-xl font-black text-main flex items-center gap-2">
             <FileText className="w-6 h-6 text-primary" />
-            Detalhes do Contrato
+            Detalhes do Contrato {contractNumber ? `nº ${String(contractNumber).padStart(2, '0')}` : ''}
           </h2>
           <button onClick={onClose} className="text-muted-olive hover:text-main transition-colors">
             <X className="w-6 h-6" />
@@ -265,13 +267,21 @@ export default function RentDetailsModal({ rental, onClose }) {
                         <span className="text-base font-black text-danger whitespace-nowrap">
                           R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(inc.amount)}
                         </span>
-                        <button 
-                          onClick={() => handleDeleteIncident(inc.id)}
-                          disabled={deletingIncidentId === inc.id}
-                          className="p-2 bg-danger/10 text-danger rounded-lg hover:bg-danger/20 transition-colors disabled:opacity-50"
-                        >
-                          {deletingIncidentId === inc.id ? <CircleNotch className="w-4 h-4 animate-spin" /> : <Trash className="w-4 h-4" />}
-                        </button>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => setEditingIncident(inc)}
+                            className="p-2 bg-slate-100 dark:bg-slate-800 text-muted-olive rounded-lg hover:text-main hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                          >
+                            <PencilSimple className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteIncident(inc.id)}
+                            disabled={deletingIncidentId === inc.id}
+                            className="p-2 bg-danger/10 text-danger rounded-lg hover:bg-danger/20 transition-colors disabled:opacity-50"
+                          >
+                            {deletingIncidentId === inc.id ? <CircleNotch className="w-4 h-4 animate-spin" /> : <Trash className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -288,6 +298,18 @@ export default function RentDetailsModal({ rental, onClose }) {
           </button>
         </div>
       </div>
+      
+      {editingIncident && (
+        <IncidentModal
+          activeRental={rental}
+          incident={editingIncident}
+          onClose={() => setEditingIncident(null)}
+          onSuccess={() => {
+            fetchIncidents()
+            setEditingIncident(null)
+          }}
+        />
+      )}
     </div>
   )
 }
