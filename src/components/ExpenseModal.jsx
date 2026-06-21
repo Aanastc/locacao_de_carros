@@ -193,8 +193,8 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess, realCur
         }
       }
 
-      // Se for troca de óleo e informou nova KM, atualizar o carro e logar
-      if (formData.expense_type === 'Troca de óleo' && formData.oil_change_km) {
+      // Se for troca de óleo e informou nova KM, atualizar o carro e logar (somente em novos lançamentos)
+      if (!expense && formData.expense_type === 'Troca de óleo' && formData.oil_change_km) {
         const newKm = parseInt(formData.oil_change_km)
         if (!isNaN(newKm)) {
           await supabase.from('cars').update({ current_km: newKm }).eq('id', car.id)
@@ -271,15 +271,17 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess, realCur
             </div>
 
             {formData.expense_type === 'Troca de óleo' && (
-              <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">KM Atual (Ref)</label>
-                  <div className="w-full bg-slate-100 dark:bg-slate-800/50 border border-border-color rounded-xl px-4 py-2.5 text-muted-olive font-bold">
-                    {realCurrentKm?.toLocaleString() || car.current_km?.toLocaleString() || '0'}
+              <div className={`grid gap-4 animate-in slide-in-from-top-2 duration-200 ${expense ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                {!expense && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">KM Atual (Ref)</label>
+                    <div className="w-full bg-slate-100 dark:bg-slate-800/50 border border-border-color rounded-xl px-4 py-2.5 text-muted-olive font-bold">
+                      {typeof realCurrentKm !== 'undefined' ? realCurrentKm?.toLocaleString() : car.current_km?.toLocaleString() || '0'}
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Nova KM *</label>
+                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">{expense ? 'KM no Lançamento *' : 'Nova KM *'}</label>
                   <input required type="number" name="oil_change_km" value={formData.oil_change_km} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold" placeholder="KM da troca" />
                 </div>
               </div>

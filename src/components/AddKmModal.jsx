@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { X, CircleNotch, MapPin } from '@phosphor-icons/react'
+import { X, CircleNotch, MapPin, Trash } from '@phosphor-icons/react'
 import { useAuth } from '../context/AuthContext'
 
 export default function AddKmModal({ car, kmLog, onClose, onSuccess }) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const getInitialDate = () => {
     if (kmLog && kmLog.date) {
@@ -69,6 +71,27 @@ export default function AddKmModal({ car, kmLog, onClose, onSuccess }) {
     }
   }
 
+  const handleDelete = async () => {
+    setDeleting(true)
+    setError('')
+    try {
+      const { error: delError } = await supabase
+        .from('km_logs')
+        .delete()
+        .eq('id', kmLog.realId || kmLog.id)
+      
+      if (delError) throw delError
+      
+      onSuccess()
+      onClose()
+    } catch (err) {
+      console.error(err)
+      setError('Erro ao excluir quilometragem.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-bg-card border border-border-color rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
@@ -101,13 +124,47 @@ export default function AddKmModal({ car, kmLog, onClose, onSuccess }) {
             <input type="text" name="notes" value={formData.notes} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none" />
           </div>
 
-          <div className="pt-4 flex justify-end gap-3 border-t border-border-color mt-6">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-muted-olive hover:text-main font-bold text-sm transition-colors">
-              Cancelar
-            </button>
-            <button type="submit" disabled={loading} className="bg-accent hover:opacity-90 text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-accent/20">
-              {loading ? <CircleNotch className="w-5 h-5 animate-spin" /> : <span>Salvar Registro</span>}
-            </button>
+          <div className="pt-4 flex justify-between gap-3 border-t border-border-color mt-6 min-h-[48px]">
+            {kmLog && !showDeleteConfirm && (
+              <button 
+                type="button" 
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-3 rounded-xl text-danger hover:bg-danger/10 transition-colors flex items-center justify-center border border-transparent hover:border-danger/20"
+                title="Excluir Registro"
+              >
+                <Trash className="w-5 h-5" />
+              </button>
+            )}
+
+            {showDeleteConfirm ? (
+              <div className="flex-1 flex items-center gap-2 animate-in slide-in-from-left-4 duration-200">
+                <span className="text-[10px] font-black uppercase text-danger mr-auto">Confirmar exclusão?</span>
+                <button 
+                  type="button" 
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-3 py-2 rounded-lg text-muted-olive text-xs font-bold"
+                >
+                  Não
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-lg bg-danger text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-danger/20 flex items-center gap-2"
+                >
+                  {deleting ? <CircleNotch className="w-3 h-3 animate-spin" /> : 'Sim, Excluir'}
+                </button>
+              </div>
+            ) : (
+              <div className={`flex flex-1 gap-3 ${kmLog ? 'justify-end' : 'justify-end w-full'}`}>
+                <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-muted-olive hover:text-main font-bold text-sm transition-colors">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={loading} className="bg-accent hover:opacity-90 text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-accent/20">
+                  {loading ? <CircleNotch className="w-5 h-5 animate-spin" /> : <span>Salvar Registro</span>}
+                </button>
+              </div>
+            )}
           </div>
         </form>
       </div>
