@@ -57,31 +57,72 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess, realCur
     loadCategories()
   }, [user.id])
 
-  useEffect(() => {
-    if (expense) {
-      // Tentar extrair KM da descrição se for troca de óleo
-      let extractedKm = ''
-      if (expense.expense_type === 'Troca de óleo' && expense.description) {
-        const match = expense.description.match(/\[KM: (\d+)\]/)
-        if (match) extractedKm = match[1]
-      }
+  const [previousKm, setPreviousKm] = useState(null)
+  const [carKmLogs, setCarKmLogs] = useState([])
 
-      setFormData({
-        expense_type: expense.expense_type,
-        custom_type: '',
-        amount: new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(expense.amount),
-        expense_date: expense.expense_date,
-        description: expense.description?.replace(/\[KM: \d+\]/, '').trim() || '',
-        oil_change_km: extractedKm
-      })
-      setIsInitialized(true)
-      return
+  useEffect(() => {
+    const fetchKmLog = async () => {
+      if (expense) {
+        const { data: allLogs } = await supabase.from('km_logs').select('*').eq('car_id', car.id).order('date', { ascending: false })
+        setCarKmLogs(allLogs || [])
+
+        let extractedKm = ''
+        if (expense.km_log_id) {
+          const { data } = await supabase.from('km_logs').select('km, date').eq('id', expense.km_log_id).single()
+          if (data) {
+            extractedKm = data.km.toString()
+            const { data: prevData } = await supabase.from('km_logs')
+               .select('km')
+               .eq('car_id', car.id)
+               .lt('date', data.date)
+               .order('date', { ascending: false })
+               .limit(1)
+               .single()
+            if (prevData) {
+              setPreviousKm(prevData.km)
+            } else {
+              setPreviousKm('Não registrado')
+            }
+          }
+        } else if (expense.expense_type === 'Troca de óleo' && expense.description) {
+          const match = expense.description.match(/\[KM: (\d+)\]/)
+          if (match) extractedKm = match[1]
+
+          // Try to fetch previous km based on expense_date
+          const { data: prevData } = await supabase.from('km_logs')
+               .select('km')
+               .eq('car_id', car.id)
+               .lt('date', new Date(expense.expense_date + 'T23:59:59').toISOString())
+               .order('date', { ascending: false })
+               .limit(1)
+               .single()
+          
+          if (prevData) {
+            setPreviousKm(prevData.km)
+          } else {
+            setPreviousKm('Não registrado')
+          }
+        }
+
+        setFormData({
+          expense_type: expense.expense_type,
+          custom_type: '',
+          amount: new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(expense.amount),
+          expense_date: expense.expense_date,
+          description: expense.description?.replace(/\[KM: \d+\]/, '').trim() || '',
+          oil_change_km: extractedKm
+        })
+        setIsInitialized(true)
+      } else {
+        setPreviousKm(typeof realCurrentKm !== 'undefined' ? realCurrentKm : car.current_km)
+        const saved = localStorage.getItem(`expenseDraft_${car.id}`)
+        if (saved) {
+          try { setFormData(JSON.parse(saved)) } catch (e) { console.error(e) }
+        }
+        setIsInitialized(true)
+      }
     }
-    const saved = localStorage.getItem(`expenseDraft_${car.id}`)
-    if (saved) {
-      try { setFormData(JSON.parse(saved)) } catch (e) { console.error(e) }
-    }
-    setIsInitialized(true)
+    fetchKmLog()
   }, [car.id, expense])
 
   useEffect(() => {
@@ -121,22 +162,44 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess, realCur
         ? formData.custom_type.trim() 
         : formData.expense_type
 
-      // Se for troca de óleo, anexar a KM na descrição se não estiver lá
+      let currentKmLogId = expense?.km_log_id || null
       let finalDescription = formData.description
+
+      // Lidar com km_logs para Troca de Óleo
       if (formData.expense_type === 'Troca de óleo' && formData.oil_change_km) {
-        const kmInfo = `[KM: ${formData.oil_change_km}]`
-        if (!finalDescription?.includes(kmInfo)) {
-          finalDescription = finalDescription ? `${finalDescription} ${kmInfo}` : kmInfo
+        const newKm = parseInt(formData.oil_change_km)
+        if (!isNaN(newKm)) {
+          if (expense && currentKmLogId) {
+             await supabase.from('km_logs').update({
+                km: newKm,
+                date: new Date(formData.expense_date + 'T12:00:00').toISOString()
+             }).eq('id', currentKmLogId)
+          } else {
+             const { data: kmData, error: kmError } = await supabase.from('km_logs').insert([{
+                car_id: car.id,
+                user_id: user.id,
+                km: newKm,
+                date: new Date(formData.expense_date + 'T12:00:00').toISOString(),
+                notes: 'Troca de Óleo'
+             }]).select().single()
+             
+             if (kmError) throw kmError
+             currentKmLogId = kmData.id
+          }
+
+          if (newKm > (car.current_km || 0)) {
+             await supabase.from('cars').update({ current_km: newKm }).eq('id', car.id)
+          }
         }
       }
-      
 
       if (expense) {
         const { error: expError } = await supabase.from('expenses').update({
           expense_type: finalType,
           amount: parseMaskedValue(formData.amount),
           expense_date: formData.expense_date,
-          description: finalDescription || null
+          description: finalDescription || null,
+          km_log_id: currentKmLogId
         }).eq('id', expense.id)
         if (expError) throw expError
       } else {
@@ -168,7 +231,8 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess, realCur
                   amount: parseFloat(installmentValue.toFixed(2)),
                   due_date: expenseDate,
                   description: description,
-                  status: 'Pendente'
+                  status: 'Pendente',
+                  km_log_id: i === 0 ? currentKmLogId : null
                 })
             }
 
@@ -187,26 +251,13 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess, realCur
               expense_type: finalType,
               amount: parseMaskedValue(formData.amount),
               expense_date: formData.expense_date,
-              description: finalDescription || null
+              description: finalDescription || null,
+              km_log_id: currentKmLogId
             }])
             if (expError) throw expError
         }
       }
 
-      // Se for troca de óleo e informou nova KM, atualizar o carro e logar (somente em novos lançamentos)
-      if (!expense && formData.expense_type === 'Troca de óleo' && formData.oil_change_km) {
-        const newKm = parseInt(formData.oil_change_km)
-        if (!isNaN(newKm)) {
-          await supabase.from('cars').update({ current_km: newKm }).eq('id', car.id)
-          await supabase.from('km_logs').insert([{
-            car_id: car.id,
-            user_id: user.id,
-            km: newKm,
-            date: new Date().toISOString(),
-            notes: 'Registro via Troca de Óleo'
-          }])
-        }
-      }
 
       localStorage.removeItem(`expenseDraft_${car.id}`)
       onSuccess()
@@ -271,15 +322,26 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess, realCur
             </div>
 
             {formData.expense_type === 'Troca de óleo' && (
-              <div className={`grid gap-4 animate-in slide-in-from-top-2 duration-200 ${expense ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                {!expense && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">KM Atual (Ref)</label>
+              <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">{expense ? 'KM Anterior (Ref)' : 'KM Atual (Ref)'}</label>
+                  {previousKm === 'Não registrado' ? (
+                    <select 
+                      className="w-full bg-slate-100 dark:bg-slate-800/50 border border-border-color rounded-xl px-4 py-2.5 text-muted-olive font-bold outline-none cursor-pointer appearance-none"
+                      onChange={(e) => setPreviousKm(e.target.value)}
+                      value={previousKm}
+                    >
+                      <option value="Não registrado">Não registrado</option>
+                      {carKmLogs.map(log => (
+                        <option key={log.id} value={log.km}>{log.km} (em {new Date(log.date).toLocaleDateString('pt-BR')})</option>
+                      ))}
+                    </select>
+                  ) : (
                     <div className="w-full bg-slate-100 dark:bg-slate-800/50 border border-border-color rounded-xl px-4 py-2.5 text-muted-olive font-bold">
-                      {typeof realCurrentKm !== 'undefined' ? realCurrentKm?.toLocaleString() : car.current_km?.toLocaleString() || '0'}
+                      {previousKm?.toLocaleString() || '0'}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">{expense ? 'KM no Lançamento *' : 'Nova KM *'}</label>
                   <input required type="number" name="oil_change_km" value={formData.oil_change_km} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold" placeholder="KM da troca" />
