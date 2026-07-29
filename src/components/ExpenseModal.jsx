@@ -169,6 +169,8 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess, realCur
       if (formData.expense_type === 'Troca de óleo' && formData.oil_change_km) {
         const newKm = parseInt(formData.oil_change_km)
         if (!isNaN(newKm)) {
+          finalDescription = formData.description ? `${formData.description.trim()} [KM: ${newKm}]` : `[KM: ${newKm}]`;
+          
           if (expense && currentKmLogId) {
              await supabase.from('km_logs').update({
                 km: newKm,
