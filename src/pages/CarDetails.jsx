@@ -137,12 +137,10 @@ export default function CarDetails() {
             
             let matchedIncomeIndex = availableIncomes.findIndex(inc => {
                 const regex = new RegExp(`parcela ${periodNum}/\\d+`, 'i');
-                return regex.test(inc.notes) || (inc.notes === `Pagamento da parcela ${periodNum}` && !inc.notes.includes('/'));
+                // Allow "Pagamento da parcela X" or just "Parcela X"
+                return regex.test(inc.notes) || 
+                       (inc.notes && inc.notes.toLowerCase().includes(`parcela ${periodNum}`) && !inc.notes.includes('/'));
             });
-
-            if (matchedIncomeIndex === -1 && availableIncomes.length > 0) {
-                matchedIncomeIndex = 0;
-            }
 
             if (matchedIncomeIndex !== -1) {
                 const matchedIncome = availableIncomes.splice(matchedIncomeIndex, 1)[0];
@@ -154,9 +152,8 @@ export default function CarDetails() {
             }
         }
 
-        const remainingBalance = Number(rental.total_price) - totalPaidSoFar;
-        const remainingPeriodsCount = multiplier - pastPaidPeriods.length;
-        const newAmountPerPeriod = remainingPeriodsCount > 0 ? remainingBalance / remainingPeriodsCount : 0;
+        // Just replicate the standard unit price for all pending periods
+        const newAmountPerPeriod = multiplier > 0 ? Number(rental.total_price) / multiplier : 0;
 
 		for (let i = 0; i < multiplier; i++) {
             const periodNum = i + 1;
