@@ -107,6 +107,7 @@ export default function CarDetails() {
 
 	const generatePaymentSchedule = (rental) => {
 		if (!rental) return [];
+	const generatePaymentSchedule = (rental, relatedIncomes = []) => {
 		const dates = [];
 		let currentDate = new Date(rental.start_date);
 		const endDate = new Date(rental.expected_end_date);
@@ -127,9 +128,39 @@ export default function CarDetails() {
 			increment = { months: 1 };
 		}
 
-		const amountPerPeriod = Number(rental.total_price) / multiplier;
+		let pastPaidPeriods = [];
+        let totalPaidSoFar = 0;
+
+        let availableIncomes = [...relatedIncomes].sort((a, b) => new Date(a.payment_date) - new Date(b.payment_date));
+
+        for (let i = 0; i < multiplier; i++) {
+            const periodNum = i + 1;
+            
+            let matchedIncomeIndex = availableIncomes.findIndex(inc => {
+                const regex = new RegExp(`parcela ${periodNum}/\\d+`, 'i');
+                return regex.test(inc.notes) || (inc.notes === `Pagamento da parcela ${periodNum}` && !inc.notes.includes('/'));
+            });
+
+            if (matchedIncomeIndex === -1 && availableIncomes.length > 0) {
+                matchedIncomeIndex = 0;
+            }
+
+            if (matchedIncomeIndex !== -1) {
+                const matchedIncome = availableIncomes.splice(matchedIncomeIndex, 1)[0];
+                pastPaidPeriods.push({
+                    period: periodNum,
+                    income: matchedIncome
+                });
+                totalPaidSoFar += parseFloat(matchedIncome.amount);
+            }
+        }
+
+        const remainingBalance = Number(rental.total_price) - totalPaidSoFar;
+        const remainingPeriodsCount = multiplier - pastPaidPeriods.length;
+        const newAmountPerPeriod = remainingPeriodsCount > 0 ? remainingBalance / remainingPeriodsCount : 0;
 
 		for (let i = 0; i < multiplier; i++) {
+            const periodNum = i + 1;
 			if (i === 0 && rental.first_payment_date) {
 				const parts = rental.first_payment_date.split("-");
 				currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
@@ -143,12 +174,20 @@ export default function CarDetails() {
 
 			let paymentDate = new Date(currentDate);
 
+            const pastMatch = pastPaidPeriods.find(p => p.period === periodNum);
+            const amount = pastMatch ? parseFloat(pastMatch.income.amount) : newAmountPerPeriod;
+
 			dates.push({
 				id: `sched-${i}`,
 				date: paymentDate.toISOString().split("T")[0],
-				amount: amountPerPeriod,
-				period: i + 1,
+				amount: amount,
+				period: periodNum,
 				totalPeriods: multiplier,
+                isPaid: !!pastMatch,
+                paidAmount: pastMatch ? parseFloat(pastMatch.income.amount) : null,
+                paidDate: pastMatch ? pastMatch.income.payment_date : null,
+                incomeId: pastMatch ? pastMatch.income.id : null,
+                type: 'Receita'
 			});
 		}
 
@@ -159,22 +198,8 @@ export default function CarDetails() {
 		const unifiedSchedule = [];
 
 		if (activeRental) {
-			const rentalSchedule = generatePaymentSchedule(activeRental).map((sched) => {
-				const matchedIncome = incomes.find(
-					(inc) =>
-						inc.rental_id === activeRental.id &&
-						(inc.notes?.includes(`parcela ${sched.period}/${sched.totalPeriods}`) ||
-							(inc.payment_date === sched.date && parseFloat(inc.amount) === parseFloat(sched.amount)))
-				);
-				return {
-					...sched,
-					isPaid: !!matchedIncome,
-					paidAmount: matchedIncome ? parseFloat(matchedIncome.amount) : null,
-					paidDate: matchedIncome ? matchedIncome.payment_date : null,
-					incomeId: matchedIncome ? matchedIncome.id : null,
-					type: 'Receita'
-				};
-			});
+            const relatedIncomes = incomes.filter(inc => inc.rental_id === activeRental.id);
+			const rentalSchedule = generatePaymentSchedule(activeRental, relatedIncomes);
 			unifiedSchedule.push(...rentalSchedule);
 		}
 

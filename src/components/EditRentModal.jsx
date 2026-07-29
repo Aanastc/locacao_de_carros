@@ -546,6 +546,10 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
                     <option value="Por Mês">Por Mês</option>
                   </select>
                 </div>
+                <div className="space-y-1.5 mt-2">
+                  <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Km Inicial</label>
+                  <input type="number" name="initial_km" value={formData.initial_km} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold" />
+                </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Valor Unitário (Opcional)</label>
                   <input type="text" name="unit_price" value={formData.unit_price} onChange={handleCurrencyChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold" placeholder="Recalcular (R$)" />
