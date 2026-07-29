@@ -105,9 +105,8 @@ export default function CarDetails() {
 		setCurrentGalleryIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
 	};
 
-	const generatePaymentSchedule = (rental) => {
-		if (!rental) return [];
 	const generatePaymentSchedule = (rental, relatedIncomes = []) => {
+		if (!rental) return [];
 		const dates = [];
 		let currentDate = new Date(rental.start_date);
 		const endDate = new Date(rental.expected_end_date);
