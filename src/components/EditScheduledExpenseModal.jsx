@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { X, CircleNotch } from '@phosphor-icons/react';
+import { X, CircleNotch, Trash } from '@phosphor-icons/react';
 
 export default function EditScheduledExpenseModal({ expense, onClose, onSuccess }) {
 	const [loading, setLoading] = useState(false);
@@ -52,6 +52,26 @@ export default function EditScheduledExpenseModal({ expense, onClose, onSuccess 
 		}
 	};
 
+	const handleDelete = async () => {
+		if (!window.confirm('Tem certeza que deseja apagar (cancelar) esta parcela? Ela aparecerá riscada na lista.')) return;
+		setLoading(true);
+		setError('');
+		try {
+			const { error: updateError } = await supabase
+				.from('scheduled_expenses')
+				.update({ status: 'Cancelado' })
+				.eq('id', expense.id);
+
+			if (updateError) throw updateError;
+			onSuccess();
+			onClose();
+		} catch (err) {
+			console.error(err);
+			setError('Erro ao cancelar a parcela.');
+			setLoading(false);
+		}
+	};
+
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
 			<div className="bg-bg-card border border-border-color rounded-3xl w-full max-w-sm shadow-2xl flex flex-col overflow-hidden">
@@ -73,6 +93,9 @@ export default function EditScheduledExpenseModal({ expense, onClose, onSuccess 
 							<input required type="date" value={formData.due_date} onChange={e => setFormData({ ...formData, due_date: e.target.value })} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none dark:[color-scheme:dark]" />
 						</div>
 						<div className="pt-2 flex gap-3">
+							<button type="button" onClick={handleDelete} disabled={loading} className="p-3 rounded-xl text-danger hover:bg-danger/10 transition-colors flex items-center justify-center border border-transparent hover:border-danger/20" title="Cancelar/Apagar Parcela">
+								<Trash className="w-5 h-5" />
+							</button>
 							<button type="button" onClick={onClose} className="flex-1 py-3 px-4 rounded-xl text-muted-olive hover:text-main font-bold text-sm">Cancelar</button>
 							<button type="submit" disabled={loading} className="flex-1 py-3 px-4 rounded-xl bg-accent text-white font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20">
 								{loading ? <CircleNotch className="w-5 h-5 animate-spin" /> : <span>Salvar</span>}

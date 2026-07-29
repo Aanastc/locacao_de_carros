@@ -184,6 +184,7 @@ export default function CarDetails() {
 				date: exp.due_date,
 				amount: exp.amount,
 				isPaid: exp.status === 'Pago',
+				isCanceled: exp.status === 'Cancelado',
 				paidDate: exp.status === 'Pago' ? exp.due_date : null,
 				paidAmount: exp.status === 'Pago' ? exp.amount : 0,
 				type: exp.expense_type === 'Reembolso Sinistro' ? 'Receita' : 'Despesa',
@@ -1485,10 +1486,9 @@ export default function CarDetails() {
 											) : (
 												filteredPaymentSchedule.map((sched) => (
 													<tr
-														key={sched.id}
-														id={`row-${sched.id}`}
-														className={`border-b border-border-color last:border-0 hover:bg-accent/5 ${sched.isPaid ? "opacity-50" : ""}`}>
-														<td className="py-4 px-6 font-bold text-main">
+														key={sched.id || `${sched.date}-${sched.amount}`}
+														className={`border-b border-border-color last:border-0 ${sched.isCanceled ? 'opacity-50 grayscale' : sched.type === 'Despesa' ? 'hover:bg-danger/5' : 'hover:bg-accent/5'}`}>
+														<td className={`py-4 px-6 font-bold text-main ${sched.isCanceled ? 'line-through' : ''}`}>
 															{sched.isPaid && sched.paidDate !== sched.date ? (
 																<div className="flex flex-col leading-tight">
 																	<span className="line-through text-[10px] text-muted-olive">
@@ -1512,14 +1512,14 @@ export default function CarDetails() {
 																)
 															)}
 														</td>
-														<td className="py-4 px-6 text-muted-olive text-xs">
+														<td className={`py-4 px-6 text-muted-olive text-xs ${sched.isCanceled ? 'line-through' : ''}`}>
 															{sched.period === '-' ? (
                                                                 <span className="break-words whitespace-normal max-w-[200px] inline-block leading-snug">{sched.description || sched.type}</span>
                                                             ) : (
                                                                 `${sched.period}/${sched.totalPeriods}`
                                                             )}
 														</td>
-														<td className={`py-4 px-6 font-bold ${sched.type === 'Despesa' ? 'text-danger' : 'text-primary'}`}>
+														<td className={`py-4 px-6 font-bold ${sched.isCanceled ? 'line-through text-muted-olive' : sched.type === 'Despesa' ? 'text-danger' : 'text-primary'}`}>
 															{sched.isPaid &&
 															sched.paidAmount !== sched.amount ? (
 																<div className="flex flex-col leading-tight">
@@ -1549,7 +1549,11 @@ export default function CarDetails() {
 															)}
 														</td>
 														<td className="py-4 px-6">
-															{sched.isPaid ? (
+															{sched.isCanceled ? (
+																<span className="px-2.5 py-1 rounded-lg bg-muted-olive/10 text-muted-olive text-[10px] font-black uppercase border border-muted-olive/20 flex items-center gap-1 w-max">
+																	<X className="w-3 h-3" /> Cancelado
+																</span>
+															) : sched.isPaid ? (
 																<span className="px-2.5 py-1 rounded-lg bg-success/10 text-success text-[10px] font-black uppercase border border-success/20 flex items-center gap-1 w-max">
 																	<CheckCircle className="w-3 h-3" /> Pago
 																</span>
@@ -1562,7 +1566,9 @@ export default function CarDetails() {
                                                             <div className="mt-1 text-[9px] uppercase font-black tracking-widest text-muted-olive">{sched.type === 'Despesa' ? 'Saída' : 'Entrada'}</div>
 														</td>
 														<td className="py-4 px-6">
-															{!sched.isPaid ? (
+                                                            {sched.isCanceled ? (
+                                                                <span className="text-[10px] uppercase font-bold text-muted-olive">Excluído</span>
+                                                            ) : !sched.isPaid ? (
                                                                 sched.period === '-' ? (
                                                                     sched.type === 'Despesa' ? (
                                                                         <div className="flex items-center gap-2">
