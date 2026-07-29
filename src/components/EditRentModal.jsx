@@ -55,6 +55,24 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
     return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val)
   }
 
+  const calculateInitialUnitPrice = () => {
+    if (!rental.start_date || !rental.expected_end_date || !rental.total_price) return '';
+    const start = new Date(rental.start_date);
+    const end = new Date(rental.expected_end_date);
+    let diffMs = end - start;
+    if (diffMs < 0) diffMs = 0;
+    const diffHours = diffMs / (1000 * 60 * 60);
+    const diffDays = Math.max(1, Math.ceil(diffHours / 24));
+    
+    let originalMultiplier = 1;
+    if (rental.rental_model === 'Por Dia') originalMultiplier = diffDays;
+    else if (rental.rental_model === 'Por Mês') originalMultiplier = Math.ceil(diffDays / 30);
+    else originalMultiplier = Math.ceil(diffDays / 7);
+
+    const unit = Number(rental.total_price) / originalMultiplier;
+    return formatInitialCurrency(unit);
+  };
+
   const [formData, setFormData] = useState({
     // Identificação
     client_name: rental.client_name || '',
@@ -83,8 +101,8 @@ export default function EditRentModal({ rental, car, onClose, onSuccess }) {
     // Contrato
     start_date: formatToLocalDatetime(rental.start_date),
     expected_end_date: formatToLocalDatetime(rental.expected_end_date),
-    rental_model: 'Por Semana',
-    unit_price: '', 
+    rental_model: rental.rental_model || 'Por Semana',
+    unit_price: calculateInitialUnitPrice(), 
     initial_km: rental.initial_km || '',
     total_price: formatInitialCurrency(rental.total_price),
     security_deposit: formatInitialCurrency(rental.security_deposit),
