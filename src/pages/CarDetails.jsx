@@ -59,6 +59,8 @@ export default function CarDetails() {
 	const { theme, toggleTheme } = useTheme();
 
 	const [kpiFilter, setKpiFilter] = useState("all");
+	const [kpiMonth, setKpiMonth] = useState(new Date().getMonth() + 1);
+	const [kpiYear, setKpiYear] = useState(new Date().getFullYear());
 	const [car, setCar] = useState(null);
 	const [activeRental, setActiveRental] = useState(null);
 	const [rentalsHistory, setRentalsHistory] = useState([]);
@@ -745,9 +747,15 @@ export default function CarDetails() {
 		if (kpiFilter === "all") return true;
 		if (!dateString) return false;
 		const d = new Date(dateString);
-		const now = new Date();
-		if (kpiFilter === "annual") return d.getFullYear() === now.getFullYear();
-		if (kpiFilter === "monthly") return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+		
+		if (kpiFilter === "annual") {
+			return d.getFullYear() === kpiYear;
+		}
+		
+		if (kpiFilter === "monthly") {
+			return d.getFullYear() === kpiYear && d.getMonth() === (kpiMonth - 1);
+		}
+		
 		return true;
 	};
 
@@ -896,12 +904,39 @@ export default function CarDetails() {
 			)}
 
 			{/* Indicadores de Desempenho (KPIs) */}
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+			<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
 				<h2 className="text-lg font-black text-main">Indicadores de Desempenho</h2>
-				<div className="flex bg-primary/5 rounded-xl p-1 border border-border-color w-full sm:w-auto">
-					<button onClick={() => setKpiFilter('all')} className={`flex-1 sm:flex-none px-5 py-2 text-[10px] font-black rounded-lg transition-all ${kpiFilter === 'all' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>TUDO</button>
-					<button onClick={() => setKpiFilter('annual')} className={`flex-1 sm:flex-none px-5 py-2 text-[10px] font-black rounded-lg transition-all ${kpiFilter === 'annual' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>ANUAL</button>
-					<button onClick={() => setKpiFilter('monthly')} className={`flex-1 sm:flex-none px-5 py-2 text-[10px] font-black rounded-lg transition-all ${kpiFilter === 'monthly' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>MENSAL</button>
+				<div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
+					<div className="flex bg-primary/5 rounded-xl p-1 border border-border-color w-full sm:w-auto">
+						<button onClick={() => setKpiFilter('all')} className={`flex-1 sm:flex-none px-5 py-2 text-[10px] font-black rounded-lg transition-all ${kpiFilter === 'all' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>TUDO</button>
+						<button onClick={() => setKpiFilter('annual')} className={`flex-1 sm:flex-none px-5 py-2 text-[10px] font-black rounded-lg transition-all ${kpiFilter === 'annual' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>ANUAL</button>
+						<button onClick={() => setKpiFilter('monthly')} className={`flex-1 sm:flex-none px-5 py-2 text-[10px] font-black rounded-lg transition-all ${kpiFilter === 'monthly' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>MENSAL</button>
+					</div>
+
+					{kpiFilter !== 'all' && (
+						<div className="flex items-center gap-2 w-full sm:w-auto">
+							{kpiFilter === 'monthly' && (
+								<select 
+									value={kpiMonth} 
+									onChange={(e) => setKpiMonth(parseInt(e.target.value))}
+									className="flex-1 sm:w-32 bg-white/5 border border-border-color text-sm font-bold rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer"
+								>
+									{['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'].map((m, i) => (
+										<option key={m} value={i + 1}>{m}</option>
+									))}
+								</select>
+							)}
+							<select 
+								value={kpiYear} 
+								onChange={(e) => setKpiYear(parseInt(e.target.value))}
+								className="flex-1 sm:w-28 bg-white/5 border border-border-color text-sm font-bold rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer"
+							>
+								{Array.from({length: 5}, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
+									<option key={y} value={y}>{y}</option>
+								))}
+							</select>
+						</div>
+					)}
 				</div>
 			</div>
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 tour-car-kpis">
