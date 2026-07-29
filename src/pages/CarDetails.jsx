@@ -220,7 +220,8 @@ export default function CarDetails() {
 				expense_type: expense.expense_type,
 				amount: expense.amount,
 				expense_date: expense.due_date,
-				description: expense.description
+				description: expense.description,
+				km_log_id: expense.km_log_id || null
 			}]).select().single();
 
 			if (expError) throw expError;

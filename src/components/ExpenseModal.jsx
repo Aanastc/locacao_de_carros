@@ -193,68 +193,75 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess, realCur
         }
       }
 
-      if (expense) {
-        const { error: expError } = await supabase.from('expenses').update({
-          expense_type: finalType,
-          amount: parseMaskedValue(formData.amount),
-          expense_date: formData.expense_date,
-          description: finalDescription || null,
-          km_log_id: currentKmLogId
-        }).eq('id', expense.id)
+      if (formData.payment_type === 'Parcelado') {
+        const totalAmount = parseMaskedValue(formData.amount)
+        const installments = parseInt(formData.installments_count)
+        const installmentValue = totalAmount / installments
+        const expensesToInsert = []
+        
+        const baseDate = new Date(formData.expense_date + 'T12:00:00')
+        const currentMonth = baseDate.getMonth()
+        const currentYear = baseDate.getFullYear()
+        
+        for (let i = 0; i < installments; i++) {
+            const dueDate = new Date(currentYear, currentMonth + i, parseInt(formData.payment_day))
+            
+            const y = dueDate.getFullYear()
+            const m = String(dueDate.getMonth() + 1).padStart(2, '0')
+            const d = String(dueDate.getDate()).padStart(2, '0')
+            const expenseDate = `${y}-${m}-${d}`
+
+            let description = `${finalType}`
+            if (finalDescription) description += ` - ${finalDescription}`
+            description += ` (Parcela ${i + 1}/${installments})`
+
+            expensesToInsert.push({
+              car_id: car.id,
+              user_id: user.id, // Adicionado para manter a consistência, embora scheduled_expenses não exija user_id diretamente, algumas views podem usar
+              expense_type: finalType,
+              amount: parseFloat(installmentValue.toFixed(2)),
+              due_date: expenseDate,
+              description: description,
+              status: 'Pendente',
+              km_log_id: i === 0 ? currentKmLogId : null
+            })
+        }
+
+        const calculatedTotal = expensesToInsert.reduce((acc, curr) => acc + curr.amount, 0)
+        if (Math.abs(calculatedTotal - totalAmount) > 0.001) {
+            const diff = totalAmount - calculatedTotal
+            expensesToInsert[installments - 1].amount += parseFloat(diff.toFixed(2))
+        }
+
+        // Se estivermos editando um gasto que era "À vista" e mudou para "Parcelado", excluímos o gasto original
+        if (expense) {
+            const { error: delError } = await supabase.from('expenses').delete().eq('id', expense.id)
+            if (delError) throw delError
+        }
+
+        const { error: expError } = await supabase.from('scheduled_expenses').insert(expensesToInsert)
         if (expError) throw expError
       } else {
-        if (formData.payment_type === 'Parcelado') {
-            const totalAmount = parseMaskedValue(formData.amount)
-            const installments = parseInt(formData.installments_count)
-            const installmentValue = totalAmount / installments
-            const expensesToInsert = []
-            
-            const baseDate = new Date(formData.expense_date + 'T12:00:00')
-            const currentMonth = baseDate.getMonth()
-            const currentYear = baseDate.getFullYear()
-            
-            for (let i = 0; i < installments; i++) {
-                const dueDate = new Date(currentYear, currentMonth + i, parseInt(formData.payment_day))
-                
-                const y = dueDate.getFullYear()
-                const m = String(dueDate.getMonth() + 1).padStart(2, '0')
-                const d = String(dueDate.getDate()).padStart(2, '0')
-                const expenseDate = `${y}-${m}-${d}`
-
-                let description = `${finalType}`
-                if (finalDescription) description += ` - ${finalDescription}`
-                description += ` (Parcela ${i + 1}/${installments})`
-
-                expensesToInsert.push({
-                  car_id: car.id,
-                  expense_type: finalType,
-                  amount: parseFloat(installmentValue.toFixed(2)),
-                  due_date: expenseDate,
-                  description: description,
-                  status: 'Pendente',
-                  km_log_id: i === 0 ? currentKmLogId : null
-                })
-            }
-
-            const calculatedTotal = expensesToInsert.reduce((acc, curr) => acc + curr.amount, 0)
-            if (Math.abs(calculatedTotal - totalAmount) > 0.001) {
-                const diff = totalAmount - calculatedTotal
-                expensesToInsert[installments - 1].amount += parseFloat(diff.toFixed(2))
-            }
-
-            const { error: expError } = await supabase.from('scheduled_expenses').insert(expensesToInsert)
-            if (expError) throw expError
+        if (expense) {
+          const { error: expError } = await supabase.from('expenses').update({
+            expense_type: finalType,
+            amount: parseMaskedValue(formData.amount),
+            expense_date: formData.expense_date,
+            description: finalDescription || null,
+            km_log_id: currentKmLogId
+          }).eq('id', expense.id)
+          if (expError) throw expError
         } else {
-            const { error: expError } = await supabase.from('expenses').insert([{
-              car_id: car.id,
-              user_id: user.id,
-              expense_type: finalType,
-              amount: parseMaskedValue(formData.amount),
-              expense_date: formData.expense_date,
-              description: finalDescription || null,
-              km_log_id: currentKmLogId
-            }])
-            if (expError) throw expError
+          const { error: expError } = await supabase.from('expenses').insert([{
+            car_id: car.id,
+            user_id: user.id,
+            expense_type: finalType,
+            amount: parseMaskedValue(formData.amount),
+            expense_date: formData.expense_date,
+            description: finalDescription || null,
+            km_log_id: currentKmLogId
+          }])
+          if (expError) throw expError
         }
       }
 
@@ -361,17 +368,15 @@ export default function ExpenseModal({ car, expense, onClose, onSuccess, realCur
               <input required type="text" inputMode="numeric" name="amount" value={formData.amount} onChange={handleCurrencyChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none font-bold" />
             </div>
 
-            {!expense && (
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Forma de Pagamento *</label>
-                    <select name="payment_type" value={formData.payment_type} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
-                        <option value="A vista">À vista</option>
-                        <option value="Parcelado">Parcelado</option>
-                    </select>
-                </div>
-            )}
+            <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Forma de Pagamento *</label>
+                <select name="payment_type" value={formData.payment_type} onChange={handleChange} className="w-full bg-bg-main border border-border-color rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-accent outline-none appearance-none cursor-pointer">
+                    <option value="A vista">À vista</option>
+                    <option value="Parcelado">Parcelado</option>
+                </select>
+            </div>
 
-            {!expense && formData.payment_type === 'Parcelado' && (
+            {formData.payment_type === 'Parcelado' && (
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-muted-olive uppercase tracking-widest ml-1">Nº de Parcelas *</label>
