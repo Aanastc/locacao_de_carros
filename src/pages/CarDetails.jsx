@@ -58,6 +58,7 @@ export default function CarDetails() {
 	const { user } = useAuth();
 	const { theme, toggleTheme } = useTheme();
 
+	const [kpiFilter, setKpiFilter] = useState("all");
 	const [car, setCar] = useState(null);
 	const [activeRental, setActiveRental] = useState(null);
 	const [rentalsHistory, setRentalsHistory] = useState([]);
@@ -740,19 +741,35 @@ export default function CarDetails() {
 		return Math.max(baseKm, maxHistoryKm);
 	}, [car?.current_km, kmHistory]);
 
+	const filterDateItem = (dateString) => {
+		if (kpiFilter === "all") return true;
+		if (!dateString) return false;
+		const d = new Date(dateString);
+		const now = new Date();
+		if (kpiFilter === "annual") return d.getFullYear() === now.getFullYear();
+		if (kpiFilter === "monthly") return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+		return true;
+	};
+
 	const totalExpenses = useMemo(() => {
-		const paid = expenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-		const pending = scheduledExpenses
-			.filter((e) => e.status === "Pendente" && e.expense_type !== "Reembolso Sinistro")
+		const paid = expenses
+			.filter(e => filterDateItem(e.expense_date))
 			.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+		
+		const pending = scheduledExpenses
+			.filter((e) => e.status === "Pendente" && e.expense_type !== "Reembolso Sinistro" && filterDateItem(e.due_date))
+			.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+		
 		return paid + pending;
-	}, [expenses, scheduledExpenses]);
+	}, [expenses, scheduledExpenses, kpiFilter]);
 
 	const totalIncomes = useMemo(() => {
-		let total = incomes.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+		let total = incomes
+			.filter(i => filterDateItem(i.payment_date))
+			.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
 		
 		const pendingReceitas = scheduledExpenses
-			.filter((e) => e.status === "Pendente" && e.expense_type === "Reembolso Sinistro")
+			.filter((e) => e.status === "Pendente" && e.expense_type === "Reembolso Sinistro" && filterDateItem(e.due_date))
 			.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
 		
 		total += pendingReceitas;
@@ -763,11 +780,13 @@ export default function CarDetails() {
 		allRentals.forEach(rental => {
 			const received = incomes.filter(inc => inc.rental_id === rental.id).reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
 			const pending = parseFloat(rental.total_price) - received;
-			if (pending > 0) total += pending;
+			if (pending > 0 && filterDateItem(rental.start_date)) {
+				total += pending;
+			}
 		});
 
 		return total;
-	}, [incomes, scheduledExpenses, activeRental, rentalsHistory]);
+	}, [incomes, scheduledExpenses, activeRental, rentalsHistory, kpiFilter]);
 
 	const allRentalsSorted = useMemo(() => {
 		const arr = [...rentalsHistory];
@@ -877,6 +896,18 @@ export default function CarDetails() {
 			)}
 
 			{/* Indicadores de Desempenho (KPIs) */}
+			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+				<h2 className="text-lg font-black text-main">Indicadores de Desempenho</h2>
+				<select 
+					value={kpiFilter}
+					onChange={(e) => setKpiFilter(e.target.value)}
+					className="bg-bg-main border border-border-color rounded-xl px-4 py-2 text-xs text-main font-bold focus:ring-2 focus:ring-accent outline-none cursor-pointer"
+				>
+					<option value="all">Todo o Período</option>
+					<option value="annual">Este Ano</option>
+					<option value="monthly">Este Mês</option>
+				</select>
+			</div>
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 tour-car-kpis">
 				<div className="glass rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
 					<p className="text-[10px] font-black uppercase tracking-widest text-muted-olive mb-2">
