@@ -898,15 +898,11 @@ export default function CarDetails() {
 			{/* Indicadores de Desempenho (KPIs) */}
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
 				<h2 className="text-lg font-black text-main">Indicadores de Desempenho</h2>
-				<select 
-					value={kpiFilter}
-					onChange={(e) => setKpiFilter(e.target.value)}
-					className="bg-bg-main border border-border-color rounded-xl px-4 py-2 text-xs text-main font-bold focus:ring-2 focus:ring-accent outline-none cursor-pointer"
-				>
-					<option value="all">Todo o Período</option>
-					<option value="annual">Este Ano</option>
-					<option value="monthly">Este Mês</option>
-				</select>
+				<div className="flex bg-primary/5 rounded-xl p-1 border border-border-color w-full sm:w-auto">
+					<button onClick={() => setKpiFilter('all')} className={`flex-1 sm:flex-none px-5 py-2 text-[10px] font-black rounded-lg transition-all ${kpiFilter === 'all' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>TUDO</button>
+					<button onClick={() => setKpiFilter('annual')} className={`flex-1 sm:flex-none px-5 py-2 text-[10px] font-black rounded-lg transition-all ${kpiFilter === 'annual' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>ANUAL</button>
+					<button onClick={() => setKpiFilter('monthly')} className={`flex-1 sm:flex-none px-5 py-2 text-[10px] font-black rounded-lg transition-all ${kpiFilter === 'monthly' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-olive hover:text-primary'}`}>MENSAL</button>
+				</div>
 			</div>
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 tour-car-kpis">
 				<div className="glass rounded-3xl p-6 border border-border-color/50 shadow-sm relative group hover:-translate-y-1 transition-transform">
